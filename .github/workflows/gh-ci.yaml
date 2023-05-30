@@ -1,0 +1,167 @@
+name: GH Actions CI
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    # Weekly tests at midnight on Sundays run on main by default:
+    #   Scheduled workflows run on the latest commit on the default or base branch.
+    #   (from https://help.github.com/en/actions/reference/events-that-trigger-workflows#scheduled-events-schedule)
+    - cron: "0 0 * * 0"
+
+concurrency:
+  # Specific group naming so CI is only cancelled
+  # within same PR or on merge to main
+  group: ${{ github.ref }}-${{ github.head_ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash  -l {0} 
+
+jobs:
+  environment-config:
+    runs-on: ubuntu-latest
+    outputs:
+      stable-python-version: ${{ steps.get-compatible-python.outputs.stable-python }}
+      python-matrix: ${{ steps.get-compatible-python.outputs.python-versions }}
+    steps:
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - id: get-compatible-python
+        uses: MDAnalysis/mdanalysis-compatible-python@main
+
+  main-tests:
+    if: "github.repository == 'MDAnalysis/transport_analysis'"
+    needs: environment-config
+    runs-on: ${{ matrix.os }}
+    strategy:
+        fail-fast: false
+        matrix:
+          os: [macOS-latest, ubuntu-latest, windows-latest]
+          python-version: ${{ fromJSON(needs.environment-config.outputs.python-matrix) }}
+          mdanalysis-version: ["latest", "develop"]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Build information
+      run: |
+        uname -a
+        df -h
+        ulimit -a
+
+
+    # More info on options: https://github.com/conda-incubator/setup-miniconda
+    - name: Install conda dependencies
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+        environment-file: devtools/conda-envs/test_env.yaml
+        add-pip-as-python-dependency: true
+        architecture: x64
+
+        miniforge-variant: Mambaforge
+        use-mamba: true
+        channels: conda-forge, defaults
+
+        activate-environment: transport_analysis-test
+        auto-update-conda: true
+        auto-activate-base: false
+        show-channel-urls: true
+
+
+    - name: Install MDAnalysis version
+      uses: MDAnalysis/install-mdanalysis@main
+      with:
+        version: ${{ matrix.mdanalysis-version }}
+        install-tests: false
+        installer:  mamba 
+        shell: bash  -l {0} 
+      
+    - name: Install package
+      run: |
+        python --version
+        python -m pip install .  --no-deps 
+
+    - name: Python information
+      run: |
+        which python
+        which pip
+        pip list
+
+        conda info
+        conda list
+
+
+    - name: Run tests
+      run: |
+        pytest -n 2 -v --cov=transport_analysis --cov-report=xml --color=yes transport_analysis/tests/
+
+    - name: codecov
+      if: github.repository == 'MDAnalysis/transport_analysis' && github.event_name != 'schedule'
+      uses: codecov/codecov-action@v3
+      with:
+        file: coverage.xml
+        name: codecov-${{ matrix.os }}-py${{ matrix.python-version }}
+        verbose: True
+
+
+  pylint_check:
+    if: "github.repository == 'MDAnalysis/transport_analysis'"
+    needs: environment-config
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ needs.environment-config.outputs.stable-python-version }}
+
+    - name: Install Pylint
+      run: |
+        which pip
+        which python
+        pip install pylint mdanalysis
+
+    - name: Run Pylint
+      env:
+        PYLINTRC: .pylintrc
+      run: |
+        pylint transport_analysis
+
+
+  pypi_check:
+    if: "github.repository == 'MDAnalysis/transport_analysis'"
+    needs: environment-config
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python ${{ needs.environment-config.outputs.stable-python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ needs.environment-config.outputs.stable-python-version }}
+
+    - name: Install dependencies
+      run: |
+        pip install setuptools cython numpy twine
+
+    - name: Build package
+      run: |
+        python setup.py sdist
+
+    - name: Check package build
+      run: |
+        DISTRIBUTION=$(ls -t1 dist/transport_analysis-*.tar.gz | head -n 1)
+        test -n "${DISTRIBUTION}" || { echo "no distribution dist/transport_analysis-*.tar.gz found"; exit 1; }
+        echo "twine check $DISTRIBUTION"
+        twine check $DISTRIBUTION

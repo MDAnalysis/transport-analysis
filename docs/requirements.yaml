@@ -1,0 +1,14 @@
+name: transport_analysis-docs
+channels:
+dependencies:
+    # Base depends
+  - python
+  - pip
+
+  - sphinx<7.0
+
+  - sphinx_rtd_theme
+
+    # Pip-only installs
+  #- pip:
+

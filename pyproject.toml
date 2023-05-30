@@ -1,0 +1,49 @@
+[build-system]
+requires = [
+  "setuptools >= 40.9.0",
+  "wheel",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "transport_analysis"
+description = "A Python package to compute and analyze transport properties."
+license = {file = "LICENSE" }
+authors = [
+    {name = "Xu Hong Chen", email = "xhgchen@gmail.com"},
+]
+maintainers = [
+    {name = "Xu Hong Chen", email = "xhgchen@gmail.com"},
+]
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "MDAnalysis>=2.0.0",
+]
+keywords = [
+    "molecular simulations",
+]
+dynamic = [
+    "version",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=6.0",
+    "pytest-xdist>=2.5",
+    "pytest-cov>=3.0",
+]
+doc = [
+    "sphinx",
+    "sphinx_rtd_theme",
+]
+
+# [project.urls]
+# source = "https://github.com/MDAnalysis/transport_analysis"
+# documentation = "https://transport_analysis.readthedocs.io"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = [
+    "transport_analysis/tests",
+]
