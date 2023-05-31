@@ -11,7 +11,7 @@ from MDAnalysis.analysis.base import AnalysisBase
 import numpy as np
 
 if TYPE_CHECKING:
-    from MDAnalysis.core.universe import Universe, AtomGroup
+    from MDAnalysis.core.universe import AtomGroup
 
 
 class VelocityAutocorr(AnalysisBase):
@@ -90,14 +90,7 @@ class VelocityAutocorr(AnalysisBase):
         self.results.timeseries = None
 
     def _prepare(self):
-        """Set things up before the analysis loop begins"""
-        # This is an optional method that runs before
-        # _single_frame loops over the trajectory.
-        # It is useful for setting up results arrays
-        # For example, below we create an array to store
-        # the number of atoms with negative coordinates
-        # in each frame.
-
+        """Set up velocity and VACF arrays before the analysis loop begins"""
         # 2D array of frames x particles
         self.results.vacf_by_particle = np.zeros((self.n_frames,
                                                   self.n_particles))
@@ -126,16 +119,16 @@ class VelocityAutocorr(AnalysisBase):
         self.dim_fac = len(self._dim)
 
     def _single_frame(self):
-        """Calculate data from a single frame of trajectory"""
+        """Constructs array of velocities for VACF calculation."""
         # This runs once for each frame of the trajectory
-        # It can contain the main analysis method, or just collect data
-        # so that analysis can be done over the aggregate data
-        # in _conclude.
 
         # The trajectory positions update automatically
-        negative = self.atomgroup.positions < 0
         # You can access the frame number using self._frame_index
-        self.results.is_negative[self._frame_index] = negative.any(axis=1)
+
+        # set shape of velocity array
+        # trajectory must have velocity information
+        self._velocity_array[self._frame_index] = (
+            self.atomgroup.velocities[:, self._dim])
 
     def _conclude(self):
         """Calculate the final results of the analysis"""
@@ -143,13 +136,4 @@ class VelocityAutocorr(AnalysisBase):
         # _single_frame loops over the trajectory.
         # It is useful for calculating the final results
         # of the analysis.
-        # For example, below we determine the
-        # which atoms always have negative coordinates.
-        self.results.always_negative = self.results.is_negative.all(axis=0)
-        always_negative_atoms = self.atomgroup[self.results.always_negative]
-        self.results.always_negative_atoms = always_negative_atoms
-        self.results.always_negative_atom_names = always_negative_atoms.names
-
-        # results don't have to be arrays -- they can be any value, e.g. floats
-        self.results.n_negative_atoms = self.results.is_negative.sum(axis=1)
-        self.results.mean_negative_atoms = self.results.n_negative_atoms.mean()
+        pass
