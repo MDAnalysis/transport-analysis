@@ -77,7 +77,7 @@ class VelocityAutocorr(AnalysisBase):
 
         # args
         self.dim_type = dim_type
-        # self._parse_dim_type()
+        self._parse_dim_type()
         # self.fft = fft
 
         # local
@@ -97,10 +97,33 @@ class VelocityAutocorr(AnalysisBase):
         # For example, below we create an array to store
         # the number of atoms with negative coordinates
         # in each frame.
-        self.results.is_negative = np.zeros(
-            (self.n_frames, self.atomgroup.n_atoms),
-            dtype=bool,
-        )
+
+        # 2D array of frames x particles
+        self.results.vacf_by_particle = np.zeros((self.n_frames,
+                                                  self.n_particles))
+
+        # 3D array of frames x particles x dimensionality
+        self._velocity_array = np.zeros(
+            (self.n_frames, self.n_particles, self.dim_fac))
+        # self.results.timeseries not set here
+
+    def _parse_dim_type(self):
+        r""" Sets up the desired dimensionality of the VACF.
+
+        """
+        keys = {'x': [0], 'y': [1], 'z': [2], 'xy': [0, 1],
+                'xz': [0, 2], 'yz': [1, 2], 'xyz': [0, 1, 2]}
+
+        self.dim_type = self.dim_type.lower()
+
+        try:
+            self._dim = keys[self.dim_type]
+        except KeyError:
+            raise ValueError(
+                'invalid dim_type: {} specified, please specify one of xyz, '
+                'xy, xz, yz, x, y, z'.format(self.dim_type))
+
+        self.dim_fac = len(self._dim)
 
     def _single_frame(self):
         """Calculate data from a single frame of trajectory"""
