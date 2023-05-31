@@ -5,7 +5,7 @@ VelocityAutocorr --- :mod:`transport_analysis.analysis.VelocityAutocorr`
 This module contains the :class:`VelocityAutocorr` class.
 
 """
-from typing import Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from MDAnalysis.analysis.base import AnalysisBase
 import numpy as np
@@ -15,62 +15,79 @@ if TYPE_CHECKING:
 
 
 class VelocityAutocorr(AnalysisBase):
-    """VelocityAutocorr class.
-
-    This class is used to perform analysis on a trajectory.
+    """
+    Class to calculate a velocity autocorrelation function (VACF).
 
     Parameters
     ----------
-    universe_or_atomgroup: :class:`~MDAnalysis.core.universe.Universe` or :class:`~MDAnalysis.core.groups.AtomGroup`
-        Universe or group of atoms to apply this analysis to.
-        If a trajectory is associated with the atoms,
-        then the computation iterates over the trajectory.
-    select: str
-        Selection string for atoms to extract from the input Universe or
-        AtomGroup
+    atomgroup : AtomGroup
+        An MDAnalysis :class:`~MDAnalysis.core.groups.AtomGroup`.
+        Note that :class:`UpdatingAtomGroup` instances are not accepted.
+    dim_type : {'xyz', 'xy', 'yz', 'xz', 'x', 'y', 'z'}
+        Desired dimensions to be included in the VACF. Defaults to 'xyz'.
+    fft : bool
+        If ``True``, uses a fast FFT based algorithm for computation of
+        the VACF. Otherwise, use the simple "windowed" algorithm.
+        The tidynamics package is required for `fft=True`.
+        Defaults to ``True``.
 
     Attributes
     ----------
-    universe: :class:`~MDAnalysis.core.universe.Universe`
-        The universe to which this analysis is applied
-    atomgroup: :class:`~MDAnalysis.core.groups.AtomGroup`
+    atomgroup : :class:`~MDAnalysis.core.groups.AtomGroup`
         The atoms to which this analysis is applied
-    results: :class:`~MDAnalysis.analysis.base.Results`
-        results of calculation are stored here, after calling
-        :meth:`VelocityAutocorr.run`
-    start: Optional[int]
-        The first frame of the trajectory used to compute the analysis
-    stop: Optional[int]
-        The frame to stop at for the analysis
-    step: Optional[int]
-        Number of frames to skip between each analyzed frame
-    n_frames: int
-        Number of frames analysed in the trajectory
-    times: numpy.ndarray
+    dim_fac : int
+        Dimensionality :math:`d` of the VACF.
+    results.timeseries : :class:`numpy.ndarray`
+        The averaged VACF over all the particles with respect to lag-time.
+        Obtained after calling :meth:`VelocityAutocorr.run`
+    results.vacf_by_particle : :class:`numpy.ndarray`
+        The VACF of each individual particle with respect to lag-time.
+    start : Optional[int]
+        The first frame of the trajectory used to compute the analysis.
+    stop : Optional[int]
+        The frame to stop at for the analysis.
+    step : Optional[int]
+        Number of frames to skip between each analyzed frame.
+    n_frames : int
+        Number of frames analysed in the trajectory.
+    n_particles : int
+        Number of particles VACF was calculated over.
+    times : numpy.ndarray
         array of Timestep times. Only exists after calling
         :meth:`VelocityAutocorr.run`
-    frames: numpy.ndarray
+    frames : numpy.ndarray
         array of Timestep frame indices. Only exists after calling
         :meth:`VelocityAutocorr.run`
     """
 
     def __init__(
         self,
-        universe_or_atomgroup: Union["Universe", "AtomGroup"],
-        select: str = "all",
-        # TODO: add your own parameters here
+        atomgroup: "AtomGroup",
+        dim_type="xyz",
+        # fft=True,
         **kwargs
     ):
         # the below line must be kept to initialize the AnalysisBase class!
-        super().__init__(universe_or_atomgroup.trajectory, **kwargs)
+        super().__init__(atomgroup.universe.trajectory, **kwargs)
         # after this you will be able to access `self.results`
         # `self.results` is a dictionary-like object
         # that can should used to store and retrieve results
         # See more at the MDAnalysis documentation:
         # https://docs.mdanalysis.org/stable/documentation_pages/analysis/base.html?highlight=results#MDAnalysis.analysis.base.Results
 
-        self.universe = universe_or_atomgroup.universe
-        self.atomgroup = universe_or_atomgroup.select_atoms(select)
+        # args
+        self.dim_type = dim_type
+        # self._parse_dim_type()
+        # self.fft = fft
+
+        # local
+        self.atomgroup = atomgroup
+        self.n_particles = len(self.atomgroup)
+        self._velocity_array = None
+
+        # result
+        self.results.vacf_by_particle = None
+        self.results.timeseries = None
 
     def _prepare(self):
         """Set things up before the analysis loop begins"""
