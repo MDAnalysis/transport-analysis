@@ -8,6 +8,7 @@ This module contains the :class:`VelocityAutocorr` class.
 from typing import TYPE_CHECKING
 
 from MDAnalysis.analysis.base import AnalysisBase
+from MDAnalysis.core.groups import UpdatingAtomGroup
 import numpy as np
 
 if TYPE_CHECKING:
@@ -75,19 +76,29 @@ class VelocityAutocorr(AnalysisBase):
         # See more at the MDAnalysis documentation:
         # https://docs.mdanalysis.org/stable/documentation_pages/analysis/base.html?highlight=results#MDAnalysis.analysis.base.Results
 
-        # args
-        self.dim_type = dim_type
-        self._parse_dim_type()
-        # self.fft = fft
+        try:
+            if not atomgroup.universe.trajectory.has_velocities:
+                raise AttributeError
+        except AttributeError:
+            raise AttributeError("atomgroup must be from a trajectory with velocities")
+        else:
+            if isinstance(atomgroup, UpdatingAtomGroup):
+                raise TypeError("UpdatingAtomGroups are not valid for VACF "
+                                "computation")
 
-        # local
-        self.atomgroup = atomgroup
-        self.n_particles = len(self.atomgroup)
-        self._velocity_array = None
+            # args
+            self.dim_type = dim_type
+            self._parse_dim_type()
+            self.fft = fft
 
-        # result
-        self.results.vacf_by_particle = None
-        self.results.timeseries = None
+            # local
+            self.atomgroup = atomgroup
+            self.n_particles = len(self.atomgroup)
+            self._velocity_array = None
+
+            # result
+            self.results.vacf_by_particle = None
+            self.results.timeseries = None
 
     def _prepare(self):
         """Set up velocity and VACF arrays before the analysis loop begins"""
