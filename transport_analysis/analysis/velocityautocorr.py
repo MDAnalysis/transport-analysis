@@ -63,10 +63,10 @@ class VelocityAutocorr(AnalysisBase):
     def __init__(
         self,
         atomgroup: "AtomGroup",
-        dim_type="xyz",
-        # fft=True,
+        dim_type: str = "xyz",
+        fft: bool = True,
         **kwargs
-    ):
+    ) -> None:
         # the below line must be kept to initialize the AnalysisBase class!
         super().__init__(atomgroup.universe.trajectory, **kwargs)
         # after this you will be able to access `self.results`
