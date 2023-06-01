@@ -53,12 +53,6 @@ class VelocityAutocorr(AnalysisBase):
         Number of frames analysed in the trajectory.
     n_particles : int
         Number of particles VACF was calculated over.
-    times : numpy.ndarray
-        array of Timestep times. Only exists after calling
-        :meth:`VelocityAutocorr.run`
-    frames : numpy.ndarray
-        array of Timestep frame indices. Only exists after calling
-        :meth:`VelocityAutocorr.run`
     """
 
     def __init__(
@@ -80,7 +74,8 @@ class VelocityAutocorr(AnalysisBase):
             if not atomgroup.universe.trajectory.has_velocities:
                 raise AttributeError
         except AttributeError:
-            raise AttributeError("atomgroup must be from a trajectory with velocities")
+            raise AttributeError("atomgroup must be from a trajectory "
+                                 "with velocities")
         else:
             if isinstance(atomgroup, UpdatingAtomGroup):
                 raise TypeError("UpdatingAtomGroups are not valid for VACF "
@@ -141,10 +136,37 @@ class VelocityAutocorr(AnalysisBase):
         self._velocity_array[self._frame_index] = (
             self.atomgroup.velocities[:, self._dim])
 
+    # Results will be in units of (angstroms / ps)^2
     def _conclude(self):
         """Calculate the final results of the analysis"""
         # This is an optional method that runs after
         # _single_frame loops over the trajectory.
         # It is useful for calculating the final results
         # of the analysis.
-        pass
+        if self.fft:
+            self._conclude_fft()
+        # else:
+        #     self._conclude_simple()
+
+    def _conclude_fft(self):  # with FFT, np.float64 bit prescision required.
+        r""" Calculates the VACF via the FCA fast correlation algorithm.
+
+        """
+        try:
+            import tidynamics
+        except ImportError:
+            raise ImportError("""ERROR --- tidynamics was not found!
+
+                tidynamics is required to compute an FFT based VACF (default)
+
+                try installing it using pip eg:
+
+                    pip install tidynamics
+
+                or set fft=False""")
+
+        velocities = self._velocity_array.astype(np.float64)
+        for n in range(self.n_particles):
+            self.results.vacf_by_particle[:, n] = tidynamics.acf(
+                velocities[:, n, :])
+        self.results.timeseries = self.results.vacf_by_particle.mean(axis=1)
