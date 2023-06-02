@@ -7,6 +7,7 @@ from transport_analysis.analysis.velocityautocorr import (
 import MDAnalysis as mda
 import numpy as np
 
+from MDAnalysis.exceptions import NoDataError
 from MDAnalysisTests.datafiles import PRM_NCBOX, TRJ_NCBOX
 from MDAnalysisTests.util import block_import, import_not_available
 
@@ -27,8 +28,10 @@ def NSTEP():
     return nstep
 
 
+# Step trajectory of unit velocities i.e. v = 0 at t = 0,
+# v = 1 at t = 1, v = 2 at t = 2, etc. for all components x, y, z
 @pytest.fixture(scope='module')
-def step_traj(NSTEP):
+def step_vtraj(NSTEP):
     v = np.arange(NSTEP)
     velocities = np.vstack([v, v, v]).T
     # NSTEP frames x 1 atom x 3 dimensions, where NSTEP = 5000
@@ -37,6 +40,22 @@ def step_traj(NSTEP):
     for i, ts in enumerate(u.trajectory):
         u.atoms.velocities = velocities_reshape
     return u
+
+
+# Expected VACF results for step_vtraj
+# At time t, VACF is:
+# sum_{x=0}^{N - 1 - t} x*(x + t) * n_dim * n_frames
+# n_dim = 3 (typically) and n_frames = total_frames - t
+def characteristic_poly(total_frames, n_dim):
+    result = np.zeros(total_frames)
+    for t in range(total_frames):
+        sum = 0
+        sum = np.dtype('int64').type(sum)
+        for x in range((total_frames - t)):
+            sum += x * (x + t)
+        vacf = sum * n_dim / (total_frames - t)
+        result[t] = vacf
+    return result
 
 
 @block_import('tidynamics')
@@ -55,9 +74,10 @@ class TestVelocityAutocorr:
 
     def test_no_velocities(self):
         u_no_vels = mda.Universe.empty(10, n_frames=5, velocities=False)
-        errmsg = "atomgroup must be from a trajectory with velocities"
-        with pytest.raises(AttributeError, match=errmsg):
-            VACF(u_no_vels.atoms, fft=False)
+        errmsg = "VACF computation requires velocities"
+        with pytest.raises(NoDataError, match=errmsg):
+            v = VACF(u_no_vels.atoms, fft=False)
+            v.run()
 
     def test_updating_ag_rejected(self, u):
         updating_ag = u.select_atoms("around 3.5 resid 1", updating=True)
@@ -70,3 +90,33 @@ class TestVelocityAutocorr:
         errmsg = f"invalid dim_type: {dimtype}"
         with pytest.raises(ValueError, match=errmsg):
             VACF(ag, dim_type=dimtype)
+
+"""
+@pytest.mark.skipif(import_not_available("tidynamics"),
+                    reason="Test skipped because tidynamics not found")
+class TestMSDFFT(object):
+
+    @pytest.fixture(scope='class')
+    def vacf_fft(self, ag):
+        # fft msd
+        v = VACF(ag, fft=True)
+        v.run()
+        return v
+
+    @pytest.mark.parametrize("tdim, tdim_factor", [
+        ('xyz', 3), ('xy', 2), ('xz', 2), ('yz', 2), ('x', 1), ('y', 1),
+        ('z', 1)
+    ])
+    def test_fft_step_vtraj_all_dims(self, step_vtraj, NSTEP,
+                                     tdim, tdim_factor):
+        # testing the fft algorithm on constant velocity trajectory
+        # this should fit the polynomial y=dim_factor*x**2
+        # fft based tests require a slight decrease in expected prescision
+        # primarily due to roundoff in fft(ifft()) calls.
+        # relative accuracy expected to be around ~1e-12
+        v_simple = VACF(step_vtraj, dim_type=tdim, fft=True)
+        v_simple.run()
+        poly = characteristic_poly(NSTEP, tdim_factor)
+        # this was relaxed from decimal=4 for numpy=1.13 test
+        assert_allclose(v_simple.results.timeseries, poly)
+"""

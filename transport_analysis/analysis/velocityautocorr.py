@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 
 from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.core.groups import UpdatingAtomGroup
+from MDAnalysis.exceptions import NoDataError
 import numpy as np
 
 if TYPE_CHECKING:
@@ -70,30 +71,23 @@ class VelocityAutocorr(AnalysisBase):
         # See more at the MDAnalysis documentation:
         # https://docs.mdanalysis.org/stable/documentation_pages/analysis/base.html?highlight=results#MDAnalysis.analysis.base.Results
 
-        try:
-            if not atomgroup.universe.trajectory.has_velocities:
-                raise AttributeError
-        except AttributeError:
-            raise AttributeError("atomgroup must be from a trajectory "
-                                 "with velocities")
-        else:
-            if isinstance(atomgroup, UpdatingAtomGroup):
-                raise TypeError("UpdatingAtomGroups are not valid for VACF "
-                                "computation")
+        if isinstance(atomgroup, UpdatingAtomGroup):
+            raise TypeError("UpdatingAtomGroups are not valid for VACF "
+                            "computation")
 
-            # args
-            self.dim_type = dim_type
-            self._parse_dim_type()
-            self.fft = fft
+        # args
+        self.dim_type = dim_type
+        self._parse_dim_type()
+        self.fft = fft
 
-            # local
-            self.atomgroup = atomgroup
-            self.n_particles = len(self.atomgroup)
-            self._velocity_array = None
+        # local
+        self.atomgroup = atomgroup
+        self.n_particles = len(self.atomgroup)
+        self._velocity_array = None
 
-            # result
-            self.results.vacf_by_particle = None
-            self.results.timeseries = None
+        # result
+        self.results.vacf_by_particle = None
+        self.results.timeseries = None
 
     def _prepare(self):
         """Set up velocity and VACF arrays before the analysis loop begins"""
@@ -131,8 +125,12 @@ class VelocityAutocorr(AnalysisBase):
         # The trajectory positions update automatically
         # You can access the frame number using self._frame_index
 
-        # set shape of velocity array
         # trajectory must have velocity information
+        if not self._ts.has_velocities:
+            raise NoDataError("VACF computation requires velocities "
+                              "in the trajectory")
+
+        # set shape of velocity array
         self._velocity_array[self._frame_index] = (
             self.atomgroup.velocities[:, self._dim])
 
