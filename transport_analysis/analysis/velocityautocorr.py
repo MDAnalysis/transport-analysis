@@ -143,8 +143,8 @@ class VelocityAutocorr(AnalysisBase):
         # of the analysis.
         if self.fft:
             self._conclude_fft()
-        # else:
-        #     self._conclude_simple()
+        else:
+            self._conclude_simple()
 
     def _conclude_fft(self):  # with FFT, np.float64 bit prescision required.
         r""" Calculates the VACF via the FCA fast correlation algorithm.
@@ -167,4 +167,28 @@ class VelocityAutocorr(AnalysisBase):
         for n in range(self.n_particles):
             self.results.vacf_by_particle[:, n] = tidynamics.acf(
                 velocities[:, n, :])
+        self.results.timeseries = self.results.vacf_by_particle.mean(axis=1)
+
+    def _conclude_simple(self):
+        r""" Calculates the VACF via the simple "windowed" algorithm.
+
+        """
+        # total frames in trajectory, use N for readability
+        N = self.n_frames
+
+        # improve precision with np.float64
+        velocities = self._velocity_array.astype(np.float64)
+
+        # iterate through all possible lagtimes up to N
+        for lag in range(N):
+            # get product of velocities shifted by "lag" frames
+            veloc = velocities[:N - lag, :, :] * velocities[lag:, :, :]
+
+            # dot product of x(, y, z) velocities per particle
+            sum_veloc = np.sum(veloc, axis=-1)
+
+            # average over # frames
+            # update VACF by particle array
+            self.results.vacf_by_particle[lag, :] = np.mean(sum_veloc, axis=0)
+        # average over # particles and update results array
         self.results.timeseries = self.results.vacf_by_particle.mean(axis=1)
