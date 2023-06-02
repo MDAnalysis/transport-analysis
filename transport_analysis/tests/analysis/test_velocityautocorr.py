@@ -50,7 +50,7 @@ def characteristic_poly(total_frames, n_dim):
     result = np.zeros(total_frames)
     for t in range(total_frames):
         sum = 0
-        sum = np.dtype('int64').type(sum)
+        sum = np.dtype('float64').type(sum)
         for x in range((total_frames - t)):
             sum += x * (x + t)
         vacf = sum * n_dim / (total_frames - t)
