@@ -1,5 +1,5 @@
 import pytest
-from numpy.testing import assert_allclose
+from numpy.testing import assert_almost_equal
 
 from transport_analysis.analysis.velocityautocorr import (
     VelocityAutocorr as VACF
@@ -19,7 +19,7 @@ def u():
 
 @pytest.fixture(scope='module')
 def ag(u):
-    return u.select_atoms("backbone and name CA and resid 1-10")
+    return u.select_atoms("name O and resname WAT and resid 1-10")
 
 
 @pytest.fixture(scope='module')
@@ -38,13 +38,13 @@ def step_vtraj(NSTEP):
     velocities_reshape = velocities.reshape([NSTEP, 1, 3])
     u = mda.Universe.empty(1, n_frames=NSTEP, velocities=True)
     for i, ts in enumerate(u.trajectory):
-        u.atoms.velocities = velocities_reshape
+        u.atoms.velocities = velocities_reshape[i]
     return u
 
 
 # Expected VACF results for step_vtraj
 # At time t, VACF is:
-# sum_{x=0}^{N - 1 - t} x*(x + t) * n_dim * n_frames
+# sum_{x=0}^{N - 1 - t} x*(x + t) * n_dim / n_frames
 # n_dim = 3 (typically) and n_frames = total_frames - t
 def characteristic_poly(total_frames, n_dim):
     result = np.zeros(total_frames)
@@ -91,14 +91,14 @@ class TestVelocityAutocorr:
         with pytest.raises(ValueError, match=errmsg):
             VACF(ag, dim_type=dimtype)
 
-"""
+
 @pytest.mark.skipif(import_not_available("tidynamics"),
                     reason="Test skipped because tidynamics not found")
-class TestMSDFFT(object):
+class TestVACFFFT(object):
 
     @pytest.fixture(scope='class')
     def vacf_fft(self, ag):
-        # fft msd
+        # fft VACF
         v = VACF(ag, fft=True)
         v.run()
         return v
@@ -109,14 +109,16 @@ class TestMSDFFT(object):
     ])
     def test_fft_step_vtraj_all_dims(self, step_vtraj, NSTEP,
                                      tdim, tdim_factor):
-        # testing the fft algorithm on constant velocity trajectory
-        # this should fit the polynomial y=dim_factor*x**2
+        # testing the fft algorithm on unit velocity trajectory
+        # defined in step_vtraj()
+        # VACF results should fit the characteristic polynomial defined in
+        # characteristic_poly()
+
         # fft based tests require a slight decrease in expected prescision
         # primarily due to roundoff in fft(ifft()) calls.
         # relative accuracy expected to be around ~1e-12
-        v_simple = VACF(step_vtraj, dim_type=tdim, fft=True)
+        v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
         v_simple.run()
         poly = characteristic_poly(NSTEP, tdim_factor)
         # this was relaxed from decimal=4 for numpy=1.13 test
-        assert_allclose(v_simple.results.timeseries, poly)
-"""
+        assert_almost_equal(v_simple.results.timeseries, poly, decimal=3)
