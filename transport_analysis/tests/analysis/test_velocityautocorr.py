@@ -99,6 +99,20 @@ class TestVelocityAutocorr:
         with pytest.raises(ValueError, match=errmsg):
             VACF(ag, dim_type=dimtype)
 
+    @pytest.mark.parametrize("tdim, tdim_factor", [
+        ('xyz', 3), ('xy', 2), ('xz', 2), ('yz', 2), ('x', 1), ('y', 1),
+        ('z', 1)
+    ])
+    def test_simple_step_vtraj_all_dims(self, step_vtraj, NSTEP, tdim,
+                                        tdim_factor):
+        # testing the "simple" windowed algorithm on unit velocity trajectory
+        # VACF results should fit the polynomial defined in
+        # characteristic_poly()
+        v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=False)
+        v_simple.run()
+        poly = characteristic_poly(NSTEP, tdim_factor)
+        assert_almost_equal(v_simple.results.timeseries, poly, decimal=4)
+
 
 @pytest.mark.skipif(import_not_available("tidynamics"),
                     reason="Test skipped because tidynamics not found")
