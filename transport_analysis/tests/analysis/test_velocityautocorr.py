@@ -28,6 +28,14 @@ def NSTEP():
     return nstep
 
 
+@pytest.fixture(scope='module')
+def vacf(ag):
+    # non-fft VACF
+    v = VACF(ag, fft=False)
+    v.run()
+    return v
+
+
 # Step trajectory of unit velocities i.e. v = 0 at t = 0,
 # v = 1 at t = 1, v = 2 at t = 2, etc. for all components x, y, z
 @pytest.fixture(scope='module')
@@ -122,3 +130,15 @@ class TestVACFFFT(object):
         poly = characteristic_poly(NSTEP, tdim_factor)
         # this was relaxed from decimal=4 for numpy=1.13 test
         assert_almost_equal(v_simple.results.timeseries, poly, decimal=3)
+
+    def test_fft_vs_simple_default(self, vacf, vacf_fft):
+        # testing on the PRM_NCBOX, TRJ_NCBOX trajectory
+        timeseries_simple = vacf.results.timeseries
+        timeseries_fft = vacf_fft.results.timeseries
+        assert_almost_equal(timeseries_simple, timeseries_fft, decimal=4)
+
+    def test_fft_vs_simple_default_per_particle(self, vacf, vacf_fft):
+        # check fft and simple give same result per particle
+        per_particle_simple = vacf.results.vacf_by_particle
+        per_particle_fft = vacf_fft.results.vacf_by_particle
+        assert_almost_equal(per_particle_simple, per_particle_fft, decimal=4)
