@@ -66,8 +66,8 @@ def characteristic_poly(last, n_dim, first=0, step=1):
         lagtime = t - first
         for x in range(first, (last - lagtime), step):
             sum += x * (x + lagtime)
-        vacf = sum * n_dim / (frames_used - lagtime)
         current_index = int(lagtime / step)
+        vacf = sum * n_dim / (frames_used - current_index)
         result[current_index] = vacf
     return result
 
@@ -119,6 +119,21 @@ class TestVelocityAutocorr:
         poly = characteristic_poly(NSTEP, tdim_factor)
         assert_almost_equal(v_simple.results.timeseries, poly, decimal=4)
 
+    @pytest.mark.parametrize("tdim, tdim_factor", [
+        ('xyz', 3), ('xy', 2), ('xz', 2), ('yz', 2), ('x', 1), ('y', 1),
+        ('z', 1)
+    ])
+    def test_simple_start_stop_step_all_dims(self, step_vtraj, tdim,
+                                             tdim_factor):
+        # testing the simple "windowed" algorithm on unit velocity trajectory
+        # defined in step_vtraj()
+        # test start stop step is working correctly
+        v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=False)
+        v_simple.run(start=10, stop=1000, step=10)
+        poly = characteristic_poly(1000, tdim_factor, first=10, step=10)
+        # polynomial must take offset start into account
+        assert_almost_equal(v_simple.results.timeseries, poly, decimal=4)
+
 
 @pytest.mark.skipif(import_not_available("tidynamics"),
                     reason="Test skipped because tidynamics not found")
@@ -162,3 +177,18 @@ class TestVACFFFT(object):
         per_particle_simple = vacf.results.vacf_by_particle
         per_particle_fft = vacf_fft.results.vacf_by_particle
         assert_almost_equal(per_particle_simple, per_particle_fft, decimal=4)
+
+    @pytest.mark.parametrize("tdim, tdim_factor", [(
+        'xyz', 3), ('xy', 2), ('xz', 2), ('yz', 2), ('x', 1), ('y', 1),
+        ('z', 1)
+    ])
+    def test_fft_start_stop_step_all_dims(self, step_vtraj, tdim,
+                                          tdim_factor):
+        # testing the fft algorithm on unit velocity trajectory
+        # defined in step_vtraj()
+        # test start stop step is working correctly
+        v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
+        v_simple.run(start=10, stop=1000, step=10)
+        poly = characteristic_poly(1000, tdim_factor, first=10, step=10)
+        # polynomial must take offset start into account
+        assert_almost_equal(v_simple.results.timeseries, poly, decimal=3)
