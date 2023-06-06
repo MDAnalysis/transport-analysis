@@ -54,15 +54,21 @@ def step_vtraj(NSTEP):
 # At time t, VACF is:
 # sum_{x=0}^{N - 1 - t} x*(x + t) * n_dim / n_frames
 # n_dim = 3 (typically) and n_frames = total_frames - t
-def characteristic_poly(total_frames, n_dim):
-    result = np.zeros(total_frames)
-    for t in range(total_frames):
+def characteristic_poly(last, n_dim, first=0, step=1):
+    diff = last - first
+    frames_used = (diff // step + 1 if diff % step != 0
+                   else diff / step)
+    frames_used = int(frames_used)
+    result = np.zeros(frames_used)
+    for t in range(first, last, step):
         sum = 0
         sum = np.dtype('float64').type(sum)
-        for x in range((total_frames - t)):
-            sum += x * (x + t)
-        vacf = sum * n_dim / (total_frames - t)
-        result[t] = vacf
+        lagtime = t - first
+        for x in range(first, (last - lagtime), step):
+            sum += x * (x + lagtime)
+        vacf = sum * n_dim / (frames_used - lagtime)
+        current_index = int(lagtime / step)
+        result[current_index] = vacf
     return result
 
 
