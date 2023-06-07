@@ -138,6 +138,20 @@ jobs:
         pylint transport_analysis
 
 
+  black_check:
+    if: "github.repository == 'MDAnalysis/transport-analysis'"
+    needs: environment-config
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: psf/black@stable
+      with:
+        options: "--check --verbose"
+        src: "./transport_analysis"
+        version: "~= 22.0"
+
+
   pypi_check:
     if: "github.repository == 'MDAnalysis/transport-analysis'"
     needs: environment-config
