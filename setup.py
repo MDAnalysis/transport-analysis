@@ -26,7 +26,7 @@ except:
 setup(
     # Self-descriptive entries which should always be present
     name='transport_analysis',
-    author='Xu Hong Chen','Hugo MacDermott-Opeskin','Orion Cohen'
+    author='Xu Hong Chen',
     author_email='xhgchen@gmail.com',
     description=short_description,
     long_description=long_description,
