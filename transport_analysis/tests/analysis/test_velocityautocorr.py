@@ -79,6 +79,41 @@ def test_notidynamics(ag):
         vacf.run()
 
 
+@pytest.mark.parametrize("tdim, tdim_keys", [
+    (1, [0]), (2, [0, 1]), (3, [0, 1, 2])
+])
+def test_characteristic_poly(step_vtraj, NSTEP, tdim, tdim_keys):
+    # test `characteristic_poly()` against `tidynamics.acf()``
+    try:
+        from tidynamics import acf
+    except ImportError:
+        pytest.skip("Skipping the test for characteristic_poly() "
+                    "because the import failed")
+    else:
+        # expected result from tidynamics.acf()
+        # n_particles should be 1 unless modifying the test
+        n_particles = len(step_vtraj.atoms)
+        # 2D array of frames x particles
+        expected = np.zeros((NSTEP, n_particles))
+        # 3D array of frames x particles x dimensions
+        step_velocities = np.zeros((NSTEP, n_particles, tdim))
+
+        for i, ts in enumerate(step_vtraj.trajectory):
+            step_velocities[i] = step_vtraj.atoms.velocities[:, tdim_keys]
+
+        for n in range(n_particles):
+            expected[:, n] = acf(step_velocities[:, n, :])
+
+        # average over n_particles
+        expected = expected.mean(axis=1)
+
+        # result from characteristic_poly()
+        actual = characteristic_poly(NSTEP, tdim)
+
+        # compare actual and expected
+        assert_almost_equal(actual, expected, decimal=4)
+
+
 class TestVelocityAutocorr:
 
     # fixtures are helpful functions that set up a test
