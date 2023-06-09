@@ -1,6 +1,7 @@
 # Authors
 
-Transport Analysis was created by Xu Hong Chen in 2023.
+Transport Analysis was created by Xu Hong Chen, Hugo MacDermott-Opeskin,
+and Orion Cohen in 2023.
 
 
 All contributing authors are listed in this file below.
@@ -21,3 +22,6 @@ The rules for this file:
 
 **2023**
 - Xu Hong Chen <@xhgchen>
+- Hugo MacDermott-Opeskin <@hmacdope>
+- Orion Cohen <@orionarcher>
+- Irfan Alibay <@IAlibay>
