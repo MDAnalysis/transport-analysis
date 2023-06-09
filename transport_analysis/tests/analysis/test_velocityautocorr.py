@@ -2,7 +2,7 @@ import pytest
 from numpy.testing import assert_almost_equal
 
 from transport_analysis.analysis.velocityautocorr import (
-    VelocityAutocorr as VACF
+    VelocityAutocorr as VACF,
 )
 import MDAnalysis as mda
 import numpy as np
@@ -12,23 +12,23 @@ from MDAnalysisTests.datafiles import PRM_NCBOX, TRJ_NCBOX
 from MDAnalysisTests.util import block_import, import_not_available
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def u():
     return mda.Universe(PRM_NCBOX, TRJ_NCBOX)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def ag(u):
     return u.select_atoms("name O and resname WAT and resid 1-10")
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def NSTEP():
     nstep = 5000
     return nstep
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def vacf(ag):
     # non-fft VACF
     v = VACF(ag, fft=False)
@@ -38,7 +38,7 @@ def vacf(ag):
 
 # Step trajectory of unit velocities i.e. v = 0 at t = 0,
 # v = 1 at t = 1, v = 2 at t = 2, etc. for all components x, y, z
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def step_vtraj(NSTEP):
     v = np.arange(NSTEP)
     velocities = np.vstack([v, v, v]).T
@@ -56,13 +56,12 @@ def step_vtraj(NSTEP):
 # n_dim = 3 (typically) and n_frames = total_frames - t
 def characteristic_poly(last, n_dim, first=0, step=1):
     diff = last - first
-    frames_used = (diff // step + 1 if diff % step != 0
-                   else diff / step)
+    frames_used = diff // step + 1 if diff % step != 0 else diff / step
     frames_used = int(frames_used)
     result = np.zeros(frames_used)
     for t in range(first, last, step):
         sum = 0
-        sum = np.dtype('float64').type(sum)
+        sum = np.dtype("float64").type(sum)
         lagtime = t - first
         for x in range(first, (last - lagtime), step):
             sum += x * (x + lagtime)
@@ -72,23 +71,25 @@ def characteristic_poly(last, n_dim, first=0, step=1):
     return result
 
 
-@block_import('tidynamics')
+@block_import("tidynamics")
 def test_notidynamics(ag):
     with pytest.raises(ImportError, match="tidynamics was not found"):
         vacf = VACF(ag)
         vacf.run()
 
 
-@pytest.mark.parametrize("tdim, tdim_keys", [
-    (1, [0]), (2, [0, 1]), (3, [0, 1, 2])
-])
+@pytest.mark.parametrize(
+    "tdim, tdim_keys", [(1, [0]), (2, [0, 1]), (3, [0, 1, 2])]
+)
 def test_characteristic_poly(step_vtraj, NSTEP, tdim, tdim_keys):
     # test `characteristic_poly()` against `tidynamics.acf()``
     try:
         from tidynamics import acf
     except ImportError:
-        pytest.skip("Skipping the test for characteristic_poly() "
-                    "because the import failed")
+        pytest.skip(
+            "Skipping the test for characteristic_poly() "
+            "because the import failed"
+        )
     else:
         # expected result from tidynamics.acf()
         # n_particles should be 1 unless modifying the test
@@ -115,7 +116,6 @@ def test_characteristic_poly(step_vtraj, NSTEP, tdim, tdim_keys):
 
 
 class TestVelocityAutocorr:
-
     # fixtures are helpful functions that set up a test
     # See more at https://docs.pytest.org/en/stable/how-to/fixtures.html
     def test_ag_accepted(self, ag):
@@ -134,18 +134,27 @@ class TestVelocityAutocorr:
         with pytest.raises(TypeError, match=errmsg):
             VACF(updating_ag, fft=False)
 
-    @pytest.mark.parametrize('dimtype', ['foo', 'bar', 'yx', 'zyx'])
+    @pytest.mark.parametrize("dimtype", ["foo", "bar", "yx", "zyx"])
     def test_dimtype_error(self, ag, dimtype):
         errmsg = f"invalid dim_type: {dimtype}"
         with pytest.raises(ValueError, match=errmsg):
             VACF(ag, dim_type=dimtype)
 
-    @pytest.mark.parametrize("tdim, tdim_factor", [
-        ('xyz', 3), ('xy', 2), ('xz', 2), ('yz', 2), ('x', 1), ('y', 1),
-        ('z', 1)
-    ])
-    def test_simple_step_vtraj_all_dims(self, step_vtraj, NSTEP, tdim,
-                                        tdim_factor):
+    @pytest.mark.parametrize(
+        "tdim, tdim_factor",
+        [
+            ("xyz", 3),
+            ("xy", 2),
+            ("xz", 2),
+            ("yz", 2),
+            ("x", 1),
+            ("y", 1),
+            ("z", 1),
+        ],
+    )
+    def test_simple_step_vtraj_all_dims(
+        self, step_vtraj, NSTEP, tdim, tdim_factor
+    ):
         # testing the "simple" windowed algorithm on unit velocity trajectory
         # VACF results should fit the polynomial defined in
         # characteristic_poly()
@@ -154,12 +163,21 @@ class TestVelocityAutocorr:
         poly = characteristic_poly(NSTEP, tdim_factor)
         assert_almost_equal(v_simple.results.timeseries, poly, decimal=4)
 
-    @pytest.mark.parametrize("tdim, tdim_factor", [
-        ('xyz', 3), ('xy', 2), ('xz', 2), ('yz', 2), ('x', 1), ('y', 1),
-        ('z', 1)
-    ])
-    def test_simple_start_stop_step_all_dims(self, step_vtraj, tdim,
-                                             tdim_factor):
+    @pytest.mark.parametrize(
+        "tdim, tdim_factor",
+        [
+            ("xyz", 3),
+            ("xy", 2),
+            ("xz", 2),
+            ("yz", 2),
+            ("x", 1),
+            ("y", 1),
+            ("z", 1),
+        ],
+    )
+    def test_simple_start_stop_step_all_dims(
+        self, step_vtraj, tdim, tdim_factor
+    ):
         # testing the simple "windowed" algorithm on unit velocity trajectory
         # defined in step_vtraj()
         # test start stop step is working correctly
@@ -170,23 +188,33 @@ class TestVelocityAutocorr:
         assert_almost_equal(v_simple.results.timeseries, poly, decimal=4)
 
 
-@pytest.mark.skipif(import_not_available("tidynamics"),
-                    reason="Test skipped because tidynamics not found")
+@pytest.mark.skipif(
+    import_not_available("tidynamics"),
+    reason="Test skipped because tidynamics not found",
+)
 class TestVACFFFT(object):
-
-    @pytest.fixture(scope='class')
+    @pytest.fixture(scope="class")
     def vacf_fft(self, ag):
         # fft VACF
         v = VACF(ag, fft=True)
         v.run()
         return v
 
-    @pytest.mark.parametrize("tdim, tdim_factor", [
-        ('xyz', 3), ('xy', 2), ('xz', 2), ('yz', 2), ('x', 1), ('y', 1),
-        ('z', 1)
-    ])
-    def test_fft_step_vtraj_all_dims(self, step_vtraj, NSTEP,
-                                     tdim, tdim_factor):
+    @pytest.mark.parametrize(
+        "tdim, tdim_factor",
+        [
+            ("xyz", 3),
+            ("xy", 2),
+            ("xz", 2),
+            ("yz", 2),
+            ("x", 1),
+            ("y", 1),
+            ("z", 1),
+        ],
+    )
+    def test_fft_step_vtraj_all_dims(
+        self, step_vtraj, NSTEP, tdim, tdim_factor
+    ):
         # testing the fft algorithm on unit velocity trajectory
         # defined in step_vtraj()
         # VACF results should fit the characteristic polynomial defined in
@@ -213,12 +241,19 @@ class TestVACFFFT(object):
         per_particle_fft = vacf_fft.results.vacf_by_particle
         assert_almost_equal(per_particle_simple, per_particle_fft, decimal=4)
 
-    @pytest.mark.parametrize("tdim, tdim_factor", [(
-        'xyz', 3), ('xy', 2), ('xz', 2), ('yz', 2), ('x', 1), ('y', 1),
-        ('z', 1)
-    ])
-    def test_fft_start_stop_step_all_dims(self, step_vtraj, tdim,
-                                          tdim_factor):
+    @pytest.mark.parametrize(
+        "tdim, tdim_factor",
+        [
+            ("xyz", 3),
+            ("xy", 2),
+            ("xz", 2),
+            ("yz", 2),
+            ("x", 1),
+            ("y", 1),
+            ("z", 1),
+        ],
+    )
+    def test_fft_start_stop_step_all_dims(self, step_vtraj, tdim, tdim_factor):
         # testing the fft algorithm on unit velocity trajectory
         # defined in step_vtraj()
         # test start stop step is working correctly

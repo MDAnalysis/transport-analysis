@@ -61,7 +61,7 @@ class VelocityAutocorr(AnalysisBase):
         atomgroup: "AtomGroup",
         dim_type: str = "xyz",
         fft: bool = True,
-        **kwargs
+        **kwargs,
     ) -> None:
         # the below line must be kept to initialize the AnalysisBase class!
         super().__init__(atomgroup.universe.trajectory, **kwargs)
@@ -72,8 +72,9 @@ class VelocityAutocorr(AnalysisBase):
         # https://docs.mdanalysis.org/stable/documentation_pages/analysis/base.html?highlight=results#MDAnalysis.analysis.base.Results
 
         if isinstance(atomgroup, UpdatingAtomGroup):
-            raise TypeError("UpdatingAtomGroups are not valid for VACF "
-                            "computation")
+            raise TypeError(
+                "UpdatingAtomGroups are not valid for VACF " "computation"
+            )
 
         # args
         self.dim_type = dim_type
@@ -92,20 +93,27 @@ class VelocityAutocorr(AnalysisBase):
     def _prepare(self):
         """Set up velocity and VACF arrays before the analysis loop begins"""
         # 2D array of frames x particles
-        self.results.vacf_by_particle = np.zeros((self.n_frames,
-                                                  self.n_particles))
+        self.results.vacf_by_particle = np.zeros(
+            (self.n_frames, self.n_particles)
+        )
 
         # 3D array of frames x particles x dimensionality
         self._velocity_array = np.zeros(
-            (self.n_frames, self.n_particles, self.dim_fac))
+            (self.n_frames, self.n_particles, self.dim_fac)
+        )
         # self.results.timeseries not set here
 
     def _parse_dim_type(self):
-        r""" Sets up the desired dimensionality of the VACF.
-
-        """
-        keys = {'x': [0], 'y': [1], 'z': [2], 'xy': [0, 1],
-                'xz': [0, 2], 'yz': [1, 2], 'xyz': [0, 1, 2]}
+        r"""Sets up the desired dimensionality of the VACF."""
+        keys = {
+            "x": [0],
+            "y": [1],
+            "z": [2],
+            "xy": [0, 1],
+            "xz": [0, 2],
+            "yz": [1, 2],
+            "xyz": [0, 1, 2],
+        }
 
         self.dim_type = self.dim_type.lower()
 
@@ -113,8 +121,9 @@ class VelocityAutocorr(AnalysisBase):
             self._dim = keys[self.dim_type]
         except KeyError:
             raise ValueError(
-                'invalid dim_type: {} specified, please specify one of xyz, '
-                'xy, xz, yz, x, y, z'.format(self.dim_type))
+                "invalid dim_type: {} specified, please specify one of xyz, "
+                "xy, xz, yz, x, y, z".format(self.dim_type)
+            )
 
         self.dim_fac = len(self._dim)
 
@@ -127,12 +136,14 @@ class VelocityAutocorr(AnalysisBase):
 
         # trajectory must have velocity information
         if not self._ts.has_velocities:
-            raise NoDataError("VACF computation requires velocities "
-                              "in the trajectory")
+            raise NoDataError(
+                "VACF computation requires velocities " "in the trajectory"
+            )
 
         # set shape of velocity array
-        self._velocity_array[self._frame_index] = (
-            self.atomgroup.velocities[:, self._dim])
+        self._velocity_array[self._frame_index] = self.atomgroup.velocities[
+            :, self._dim
+        ]
 
     # Results will be in units of (angstroms / ps)^2
     def _conclude(self):
@@ -147,13 +158,12 @@ class VelocityAutocorr(AnalysisBase):
             self._conclude_simple()
 
     def _conclude_fft(self):  # with FFT, np.float64 bit prescision required.
-        r""" Calculates the VACF via the FCA fast correlation algorithm.
-
-        """
+        r"""Calculates the VACF via the FCA fast correlation algorithm."""
         try:
             import tidynamics
         except ImportError:
-            raise ImportError("""ERROR --- tidynamics was not found!
+            raise ImportError(
+                """ERROR --- tidynamics was not found!
 
                 tidynamics is required to compute an FFT based VACF (default)
 
@@ -161,18 +171,18 @@ class VelocityAutocorr(AnalysisBase):
 
                     pip install tidynamics
 
-                or set fft=False""")
+                or set fft=False"""
+            )
 
         velocities = self._velocity_array.astype(np.float64)
         for n in range(self.n_particles):
             self.results.vacf_by_particle[:, n] = tidynamics.acf(
-                velocities[:, n, :])
+                velocities[:, n, :]
+            )
         self.results.timeseries = self.results.vacf_by_particle.mean(axis=1)
 
     def _conclude_simple(self):
-        r""" Calculates the VACF via the simple "windowed" algorithm.
-
-        """
+        r"""Calculates the VACF via the simple "windowed" algorithm."""
         # total frames in trajectory, use N for readability
         N = self.n_frames
 
@@ -182,7 +192,7 @@ class VelocityAutocorr(AnalysisBase):
         # iterate through all possible lagtimes up to N
         for lag in range(N):
             # get product of velocities shifted by "lag" frames
-            veloc = velocities[:N - lag, :, :] * velocities[lag:, :, :]
+            veloc = velocities[: N - lag, :, :] * velocities[lag:, :, :]
 
             # dot product of x(, y, z) velocities per particle
             sum_veloc = np.sum(veloc, axis=-1)
