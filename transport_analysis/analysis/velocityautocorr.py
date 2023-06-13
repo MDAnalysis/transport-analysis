@@ -11,7 +11,7 @@ from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.core.groups import UpdatingAtomGroup
 from MDAnalysis.exceptions import NoDataError
 import numpy as np
-from .due import due, Doi
+from transport_analysis.analysis.due import due, Doi
 
 if TYPE_CHECKING:
     from MDAnalysis.core.universe import AtomGroup
