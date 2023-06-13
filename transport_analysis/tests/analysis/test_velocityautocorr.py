@@ -176,14 +176,22 @@ class TestVelocityAutocorr:
         ],
     )
     def test_simple_start_stop_step_all_dims(
-        self, step_vtraj, tdim, tdim_factor
+        self,
+        step_vtraj,
+        tdim,
+        tdim_factor,
+        tstart=10,
+        tstop=1000,
+        tstep=10,
     ):
         # testing the simple "windowed" algorithm on unit velocity trajectory
         # defined in step_vtraj()
         # test start stop step is working correctly
         v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=False)
-        v_simple.run(start=10, stop=1000, step=10)
-        poly = characteristic_poly(1000, tdim_factor, first=10, step=10)
+        v_simple.run(start=tstart, stop=tstop, step=tstep)
+        poly = characteristic_poly(
+            tstop, tdim_factor, first=tstart, step=tstep
+        )
         # polynomial must take offset start into account
         assert_almost_equal(v_simple.results.timeseries, poly, decimal=4)
 
@@ -253,12 +261,16 @@ class TestVACFFFT(object):
             ("z", 1),
         ],
     )
-    def test_fft_start_stop_step_all_dims(self, step_vtraj, tdim, tdim_factor):
+    def test_fft_start_stop_step_all_dims(
+        self, step_vtraj, tdim, tdim_factor, tstart=10, tstop=1000, tstep=10
+    ):
         # testing the fft algorithm on unit velocity trajectory
         # defined in step_vtraj()
         # test start stop step is working correctly
         v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
-        v_simple.run(start=10, stop=1000, step=10)
-        poly = characteristic_poly(1000, tdim_factor, first=10, step=10)
+        v_simple.run(start=tstart, stop=tstop, step=tstep)
+        poly = characteristic_poly(
+            tstop, tdim_factor, first=tstart, step=tstep
+        )
         # polynomial must take offset start into account
         assert_almost_equal(v_simple.results.timeseries, poly, decimal=3)
