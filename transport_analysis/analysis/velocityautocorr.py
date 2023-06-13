@@ -84,11 +84,6 @@ class VelocityAutocorr(AnalysisBase):
         # local
         self.atomgroup = atomgroup
         self.n_particles = len(self.atomgroup)
-        self._velocity_array = None
-
-        # result
-        self.results.vacf_by_particle = None
-        self.results.timeseries = None
 
     def _prepare(self):
         """Set up velocity and VACF arrays before the analysis loop begins"""
