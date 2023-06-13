@@ -16,10 +16,12 @@ from transport_analysis.analysis.due import due, Doi
 if TYPE_CHECKING:
     from MDAnalysis.core.universe import AtomGroup
 
-due.cite(Doi("10.21105/joss.00877"),
-         description="Autocorrelation with tidynamics",
-         path="transport_analysis.analysis.velocityautocorr",
-         cite_module=True)
+due.cite(
+    Doi("10.21105/joss.00877"),
+    description="Autocorrelation with tidynamics",
+    path="transport_analysis.analysis.velocityautocorr",
+    cite_module=True,
+)
 
 
 class VelocityAutocorr(AnalysisBase):
