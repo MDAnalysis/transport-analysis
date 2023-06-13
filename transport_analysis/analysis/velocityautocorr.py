@@ -11,9 +11,15 @@ from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.core.groups import UpdatingAtomGroup
 from MDAnalysis.exceptions import NoDataError
 import numpy as np
+from .due import due, Doi
 
 if TYPE_CHECKING:
     from MDAnalysis.core.universe import AtomGroup
+
+due.cite(Doi("10.21105/joss.00877"),
+         description="Autocorrelation with tidynamics",
+         path="transport_analysis.analysis.velocityautocorr",
+         cite_module=True)
 
 
 class VelocityAutocorr(AnalysisBase):
