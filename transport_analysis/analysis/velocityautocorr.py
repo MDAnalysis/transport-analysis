@@ -81,7 +81,7 @@ class VelocityAutocorr(AnalysisBase):
 
         if isinstance(atomgroup, UpdatingAtomGroup):
             raise TypeError(
-                "UpdatingAtomGroups are not valid for VACF " "computation"
+                "UpdatingAtomGroups are not valid for VACF computation"
             )
 
         # args
