@@ -67,6 +67,7 @@ setup(
             "pytest>=6.0",
             "pytest-xdist>=2.5",
             "pytest-cov>=3.0",
+            "MDAnalysisTests>=2.0.0",
         ],
         "doc": [
             "sphinx",

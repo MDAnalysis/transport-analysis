@@ -20,9 +20,13 @@ The rules for this file:
 
 ### Authors
 <!-- GitHub usernames of contributors to this release -->
+xhgchen, hmacdope, orionarcher, IAlibay
 
 ### Added
 <!-- New added features -->
+  * Add module `velocityautocorr` with class `VelocityAutocorr` to
+    calculate a velocity autocorrelation function from an
+    `AtomGroup`
 
 ### Fixed
 <!-- Bug fixes -->

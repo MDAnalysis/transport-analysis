@@ -10,11 +10,15 @@ dependencies:
   # MDAnalysis
   - MDAnalysis
 
+  # tidynamics
+  - tidynamics
+
   # Testing
   - pytest
   - pytest-cov
   - pytest-xdist
   - codecov
+  - MDAnalysisTests
 
   # Pip-only installs
   #- pip:

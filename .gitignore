@@ -107,3 +107,6 @@ ENV/
 
 # poetry
 poetry.lock
+
+# duecredit
+.duecredit.p
