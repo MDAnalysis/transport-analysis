@@ -4,6 +4,12 @@ dependencies:
     # Base depends
   - python
   - pip
+  - numpy
+  - pytest
+  - mdanalysis
+  - nglview
+  - nbsphinx
+  - ipython
 
   - sphinx<7.0
 

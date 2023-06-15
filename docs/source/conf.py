@@ -53,6 +53,8 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
     'sphinx.ext.extlinks',
+    'nbsphinx',
+    'IPython.sphinxext.ipython_directive',
 ]
 
 autosummary_generate = True
