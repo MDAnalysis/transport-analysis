@@ -6,7 +6,7 @@ from transport_analysis.analysis.velocityautocorr import (
 )
 import MDAnalysis as mda
 import numpy as np
-from tidynamics import acf
+import tidynamics
 
 from MDAnalysis.exceptions import NoDataError
 from MDAnalysisTests.datafiles import PRM_NCBOX, TRJ_NCBOX
@@ -89,7 +89,7 @@ def test_characteristic_poly(step_vtraj, NSTEP, tdim, tdim_keys):
         step_velocities[i] = step_vtraj.atoms.velocities[:, tdim_keys]
 
     for n in range(n_particles):
-        expected[:, n] = acf(step_velocities[:, n, :])
+        expected[:, n] = tidynamics.acf(step_velocities[:, n, :])
 
     # average over n_particles
     expected = expected.mean(axis=1)
