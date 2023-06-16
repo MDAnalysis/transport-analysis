@@ -1,5 +1,5 @@
 VelocityAutocorr
 ================
 
- .. automodule:: transport_analysis.velocityautocorr
+ .. automodule:: transport_analysis.analysis.velocityautocorr
     :members:
