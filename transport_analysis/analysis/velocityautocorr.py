@@ -11,6 +11,7 @@ from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.core.groups import UpdatingAtomGroup
 from MDAnalysis.exceptions import NoDataError
 import numpy as np
+import tidynamics
 from transport_analysis.analysis.due import due, Doi
 
 if TYPE_CHECKING:
@@ -162,21 +163,6 @@ class VelocityAutocorr(AnalysisBase):
 
     def _conclude_fft(self):  # with FFT, np.float64 bit prescision required.
         r"""Calculates the VACF via the FCA fast correlation algorithm."""
-        try:
-            import tidynamics
-        except ImportError:
-            raise ImportError(
-                """ERROR --- tidynamics was not found!
-
-                tidynamics is required to compute an FFT based VACF (default)
-
-                try installing it using pip eg:
-
-                    pip install tidynamics
-
-                or set fft=False"""
-            )
-
         velocities = self._velocity_array.astype(np.float64)
         for n in range(self.n_particles):
             self.results.vacf_by_particle[:, n] = tidynamics.acf(

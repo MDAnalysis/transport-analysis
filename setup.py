@@ -51,6 +51,7 @@ setup(
     # do not use for Conda deployment
     install_requires=[
         "mdanalysis>=2.0.0",
+        "tidynamics>=1.0.0",
     ],
     # Additional entries you may want simply uncomment the lines you want and fill in the data
     # url='transport_analysis.readthedocs.io/en/latest/',  # Website
