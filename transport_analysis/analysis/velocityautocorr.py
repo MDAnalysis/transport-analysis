@@ -1,8 +1,9 @@
 """
 VelocityAutocorr --- :mod:`transport_analysis.analysis.VelocityAutocorr`
-===========================================================
+========================================================================
 
-This module contains the :class:`VelocityAutocorr` class.
+This module contains the :class:`VelocityAutocorr` class, a tool to
+efficiently calculate a velocity autocorrelation function (VACF).
 
 """
 from typing import TYPE_CHECKING
