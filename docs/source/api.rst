@@ -2,7 +2,10 @@ API Documentation
 =================
 
 .. autosummary::
-   :toctree: autosummary
-   :recursive:
+   :toctree: stubs
 
-   transport_analysis
+.. toctree::
+   :maxdepth: 3
+   :caption: API Reference
+
+   api/velocityautocorr
