@@ -4,6 +4,8 @@ dependencies:
     # Base depends
   - python
   - pip
+  - nbsphinx
+  - ipython
 
   - sphinx<7.0
 

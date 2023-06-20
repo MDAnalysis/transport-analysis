@@ -6,11 +6,19 @@
 Welcome to Transport Analysis's documentation!
 =========================================================
 
+Transport Analysis provides an efficient, flexible, and customizable
+set of tools for computing and analyzing transport properties.
+It harnesses the power of `MDAnalysis <https://www.mdanalysis.org/>`_'s
+core `AtomGroup` and `Universe` data structures to quickly access
+trajectory data and execute complex transport property calculations.
+
+To begin, check out the Getting Started section of the documentation.
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   getting_started
+   getting_started.ipynb
    api
 
 
