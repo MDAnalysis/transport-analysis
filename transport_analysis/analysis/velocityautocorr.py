@@ -4,7 +4,7 @@ VelocityAutocorr --- :mod:`transport_analysis.analysis.VelocityAutocorr`
 
 This module offers a class to efficiently calculate a velocity
 autocorrelation function (VACF). Averaging over all atoms in the atom group
-`ag`, regardless of type, it will calculate
+``ag``, regardless of type, it will calculate
 
 .. math::
     C(j \Delta t) = {1 \over N - j} \sum_{i=0}^{N-1-j}
@@ -35,7 +35,7 @@ We can run the calculation using any variable of choice such as
    >>> wat_vacf = ta.VelocityAutocorr(ag).run()
    >>> wat_vacf.results.timeseries
    [275.62075467 -18.42008255 -23.94383428  41.41415381  -2.3164344
- -35.66393559 -22.66874897  -3.97575003   6.57888933  -5.29065096]
+   -35.66393559 -22.66874897  -3.97575003   6.57888933  -5.29065096]
 
 Notice that this example data is insufficient to provide a well-defined VACF.
 When working with real data, ensure that the frames are captured frequently
