@@ -1,7 +1,7 @@
 import pytest
 from numpy.testing import assert_almost_equal
 
-from transport_analysis.analysis.velocityautocorr import (
+from transport_analysis.velocityautocorr import (
     VelocityAutocorr as VACF,
 )
 import MDAnalysis as mda
