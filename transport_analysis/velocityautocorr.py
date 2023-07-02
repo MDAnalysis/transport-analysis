@@ -49,7 +49,7 @@ from MDAnalysis.core.groups import UpdatingAtomGroup
 from MDAnalysis.exceptions import NoDataError
 import numpy as np
 import tidynamics
-from transport_analysis.analysis.due import due, Doi
+from transport_analysis.due import due, Doi
 
 if TYPE_CHECKING:
     from MDAnalysis.core.universe import AtomGroup
