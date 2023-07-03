@@ -14,4 +14,4 @@ comment:
   paths: null
 ignore:
   - "transport_analysis/_version.py"
-  - "transport_analysis/analysis/due.py"
+  - "transport_analysis/due.py"
