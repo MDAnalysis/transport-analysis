@@ -234,8 +234,10 @@ class VelocityAutocorr(AnalysisBase):
 def plot_vacf(vacf_obj, start=0, stop=0, step=1):
     stop = vacf_obj.n_frames if stop == 0 else stop
 
-    plt.xlabel('Time (ps)')
-    plt.ylabel('Velocity Autocorrelation Function (VACF) (Å)')
-    plt.title('Velocity Autocorrelation Function vs. Time')
-    plt.plot(vacf_obj.times[start:stop:step],
-             vacf_obj.results.timeseries[start:stop:step])
+    plt.xlabel("Time (ps)")
+    plt.ylabel("Velocity Autocorrelation Function (VACF) (Å)")
+    plt.title("Velocity Autocorrelation Function vs. Time")
+    plt.plot(
+        vacf_obj.times[start:stop:step],
+        vacf_obj.results.timeseries[start:stop:step],
+    )
