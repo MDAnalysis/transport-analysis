@@ -1,8 +1,9 @@
 import pytest
-from numpy.testing import assert_almost_equal
+from numpy.testing import assert_almost_equal, assert_allclose
 
 from transport_analysis.velocityautocorr import (
     VelocityAutocorr as VACF,
+    plot_vacf,
 )
 import MDAnalysis as mda
 import numpy as np
@@ -256,3 +257,30 @@ class TestVACFFFT(object):
         )
         # polynomial must take offset start into account
         assert_almost_equal(v_simple.results.timeseries, poly, decimal=3)
+
+
+def test_plot_vacf(vacf):
+    # Expected data to be plotted
+    x_exp = vacf.times
+    y_exp = vacf.results.timeseries
+
+    # Actual data returned from plot
+    line, = plot_vacf(vacf)
+    x_act, y_act = line.get_xydata().T
+
+    assert_allclose(x_act, x_exp)
+    assert_allclose(y_act, y_exp)
+
+
+def test_plot_vacf_labels(vacf):
+    # Expected labels
+    x_exp = "Time (ps)"
+    y_exp = "Velocity Autocorrelation Function (VACF) (Å)"
+
+    # Actual labels returned from plot
+    line, = plot_vacf(vacf)
+    x_act = line.axes.get_xlabel()
+    y_act = line.axes.get_ylabel()
+
+    assert x_act == x_exp
+    assert y_act == y_exp
