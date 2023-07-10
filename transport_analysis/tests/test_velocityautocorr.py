@@ -265,7 +265,7 @@ def test_plot_vacf(vacf):
     y_exp = vacf.results.timeseries
 
     # Actual data returned from plot
-    line, = plot_vacf(vacf)
+    (line,) = plot_vacf(vacf)
     x_act, y_act = line.get_xydata().T
 
     assert_allclose(x_act, x_exp)
@@ -278,7 +278,7 @@ def test_plot_vacf_labels(vacf):
     y_exp = "Velocity Autocorrelation Function (VACF) (Å)"
 
     # Actual labels returned from plot
-    line, = plot_vacf(vacf)
+    (line,) = plot_vacf(vacf)
     x_act = line.axes.get_xlabel()
     y_act = line.axes.get_ylabel()
 
