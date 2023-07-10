@@ -49,6 +49,7 @@ from MDAnalysis.core.groups import UpdatingAtomGroup
 from MDAnalysis.exceptions import NoDataError
 import numpy as np
 import tidynamics
+from matplotlib import pyplot as plt
 from transport_analysis.due import due, Doi
 
 if TYPE_CHECKING:
@@ -228,3 +229,13 @@ class VelocityAutocorr(AnalysisBase):
             self.results.vacf_by_particle[lag, :] = np.mean(sum_veloc, axis=0)
         # average over # particles and update results array
         self.results.timeseries = self.results.vacf_by_particle.mean(axis=1)
+
+
+def plot_vacf(vacf_obj, start=0, stop=0, step=1):
+    stop = vacf_obj.n_frames if stop == 0 else stop
+
+    plt.xlabel('Time (ps)')
+    plt.ylabel('Velocity Autocorrelation Function (VACF) (Å)')
+    plt.title('Velocity Autocorrelation Function vs. Time')
+    plt.plot(vacf_obj.times[start:stop:step],
+             vacf_obj.results.timeseries[start:stop:step])
