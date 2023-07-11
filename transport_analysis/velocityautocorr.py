@@ -58,7 +58,7 @@ if TYPE_CHECKING:
 due.cite(
     Doi("10.21105/joss.00877"),
     description="Autocorrelation with tidynamics",
-    path="transport_analysis.analysis.velocityautocorr",
+    path="transport_analysis.velocityautocorr",
     cite_module=True,
 )
 
