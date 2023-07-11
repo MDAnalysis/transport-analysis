@@ -50,6 +50,7 @@ from MDAnalysis.exceptions import NoDataError
 import numpy as np
 import tidynamics
 import matplotlib.pyplot as plt
+from scipy import integrate
 from transport_analysis.due import due, Doi
 
 if TYPE_CHECKING:
@@ -261,4 +262,33 @@ class VelocityAutocorr(AnalysisBase):
         return ax_vacf.plot(
             self.times[start:stop:step],
             self.results.timeseries[start:stop:step],
+        )
+
+    def sd(self, start=0, stop=0, step=1):
+        """
+        Returns a self-diffusivity value using ``scipy.integrate.trapezoid``.
+        Analysis must be run prior to computing self-diffusivity.
+
+        Parameters
+        ----------
+        start : Optional[int]
+            The first frame of ``self.results.timeseries``
+            used for the calculation.
+        stop : Optional[int]
+            The frame of ``self.results.timeseries`` to stop at
+            for the calculation, non-inclusive.
+        step : Optional[int]
+            Number of frames to skip between each frame used
+            for the calculation.
+
+        Returns
+        -------
+        `numpy.float64`
+            The calculated self-diffusivity value for the analysis.
+        """
+        stop = self.n_frames if stop == 0 else stop
+
+        return integrate.trapezoid(
+            self.results.timeseries[start:stop:step],
+            self.times[start:stop:step],
         )
