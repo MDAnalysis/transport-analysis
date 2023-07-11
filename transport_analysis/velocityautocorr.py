@@ -288,7 +288,10 @@ class VelocityAutocorr(AnalysisBase):
         """
         stop = self.n_frames if stop == 0 else stop
 
-        return integrate.trapezoid(
-            self.results.timeseries[start:stop:step],
-            self.times[start:stop:step],
+        return (
+            integrate.trapezoid(
+                self.results.timeseries[start:stop:step],
+                self.times[start:stop:step],
+            )
+            / self.dim_fac
         )
