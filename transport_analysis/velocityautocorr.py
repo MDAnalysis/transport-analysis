@@ -230,40 +230,35 @@ class VelocityAutocorr(AnalysisBase):
         # average over # particles and update results array
         self.results.timeseries = self.results.vacf_by_particle.mean(axis=1)
 
+    def plot_vacf(self, start=0, stop=0, step=1):
+        """
+        Returns a velocity autocorrelation function (VACF) plot via
+        ``Matplotlib``. Analysis must be run prior to plotting.
 
-def plot_vacf(vacf_obj, start=0, stop=0, step=1):
-    """
-    Returns a velocity autocorrelation function (VACF) plot via
-    ``Matplotlib``.
+        Parameters
+        ----------
+        start : Optional[int]
+            The first frame of ``self.results.timeseries``
+            used for the plot.
+        stop : Optional[int]
+            The frame of ``self.results.timeseries`` to stop at
+            for the plot, non-inclusive.
+        step : Optional[int]
+            Number of frames to skip between each plotted frame.
 
-    Parameters
-    ----------
-    vacf_obj : :class:`~transport_analysis.velocityautocorr.VelocityAutocorr`
-        A transport analysis
-        :class:`~transport_analysis.velocityautocorr.VelocityAutocorr`.
-        Must be run prior to plotting.
-    start : Optional[int]
-        The first frame of ``vacf_obj.results.timeseries``
-        used for the plot.
-    stop : Optional[int]
-        The frame of ``vacf_obj.results.timeseries`` to stop at
-        for the plot, non-inclusive.
-    step : Optional[int]
-        Number of frames to skip between each plotted frame.
+        Returns
+        -------
+        :class:`matplotlib.lines.Line2D`
+            A :class:`matplotlib.lines.Line2D` instance with
+            the desired VACF plotting information.
+        """
 
-    Returns
-    -------
-    :class:`matplotlib.lines.Line2D`
-        A :class:`matplotlib.lines.Line2D` instance with
-        the desired VACF plotting information.
-    """
+        stop = self.n_frames if stop == 0 else stop
 
-    stop = vacf_obj.n_frames if stop == 0 else stop
-
-    fig, ax_vacf = plt.subplots()
-    ax_vacf.set_xlabel("Time (ps)")
-    ax_vacf.set_ylabel("Velocity Autocorrelation Function (VACF) (Å)")
-    return ax_vacf.plot(
-        vacf_obj.times[start:stop:step],
-        vacf_obj.results.timeseries[start:stop:step],
-    )
+        fig, ax_vacf = plt.subplots()
+        ax_vacf.set_xlabel("Time (ps)")
+        ax_vacf.set_ylabel("Velocity Autocorrelation Function (VACF) (Å)")
+        return ax_vacf.plot(
+            self.times[start:stop:step],
+            self.results.timeseries[start:stop:step],
+        )

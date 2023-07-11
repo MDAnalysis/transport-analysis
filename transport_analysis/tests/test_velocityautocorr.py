@@ -3,7 +3,6 @@ from numpy.testing import assert_almost_equal, assert_allclose
 
 from transport_analysis.velocityautocorr import (
     VelocityAutocorr as VACF,
-    plot_vacf,
 )
 import MDAnalysis as mda
 import numpy as np
@@ -182,6 +181,43 @@ class TestVelocityAutocorr:
         # polynomial must take offset start into account
         assert_almost_equal(v_simple.results.timeseries, poly, decimal=4)
 
+    def test_plot_vacf(self, vacf):
+        # Expected data to be plotted
+        x_exp = vacf.times
+        y_exp = vacf.results.timeseries
+
+        # Actual data returned from plot
+        (line,) = vacf.plot_vacf()
+        x_act, y_act = line.get_xydata().T
+
+        assert_allclose(x_act, x_exp)
+        assert_allclose(y_act, y_exp)
+
+    def test_plot_vacf_labels(self, vacf):
+        # Expected labels
+        x_exp = "Time (ps)"
+        y_exp = "Velocity Autocorrelation Function (VACF) (Å)"
+
+        # Actual labels returned from plot
+        (line,) = vacf.plot_vacf()
+        x_act = line.axes.get_xlabel()
+        y_act = line.axes.get_ylabel()
+
+        assert x_act == x_exp
+        assert y_act == y_exp
+
+    def test_plot_vacf_start_stop_step(self, vacf, start=1, stop=9, step=2):
+        # Expected data to be plotted
+        x_exp = vacf.times[start:stop:step]
+        y_exp = vacf.results.timeseries[start:stop:step]
+
+        # Actual data returned from plot
+        (line,) = vacf.plot_vacf(start=start, stop=stop, step=step)
+        x_act, y_act = line.get_xydata().T
+
+        assert_allclose(x_act, x_exp)
+        assert_allclose(y_act, y_exp)
+
 
 class TestVACFFFT(object):
     @pytest.fixture(scope="class")
@@ -257,43 +293,3 @@ class TestVACFFFT(object):
         )
         # polynomial must take offset start into account
         assert_almost_equal(v_simple.results.timeseries, poly, decimal=3)
-
-
-def test_plot_vacf(vacf):
-    # Expected data to be plotted
-    x_exp = vacf.times
-    y_exp = vacf.results.timeseries
-
-    # Actual data returned from plot
-    (line,) = plot_vacf(vacf)
-    x_act, y_act = line.get_xydata().T
-
-    assert_allclose(x_act, x_exp)
-    assert_allclose(y_act, y_exp)
-
-
-def test_plot_vacf_labels(vacf):
-    # Expected labels
-    x_exp = "Time (ps)"
-    y_exp = "Velocity Autocorrelation Function (VACF) (Å)"
-
-    # Actual labels returned from plot
-    (line,) = plot_vacf(vacf)
-    x_act = line.axes.get_xlabel()
-    y_act = line.axes.get_ylabel()
-
-    assert x_act == x_exp
-    assert y_act == y_exp
-
-
-def test_plot_vacf_start_stop_step(vacf, start=1, stop=9, step=2):
-    # Expected data to be plotted
-    x_exp = vacf.times[start:stop:step]
-    y_exp = vacf.results.timeseries[start:stop:step]
-
-    # Actual data returned from plot
-    (line,) = plot_vacf(vacf, start=start, stop=stop, step=step)
-    x_act, y_act = line.get_xydata().T
-
-    assert_allclose(x_act, x_exp)
-    assert_allclose(y_act, y_exp)
