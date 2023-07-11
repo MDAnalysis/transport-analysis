@@ -284,3 +284,16 @@ def test_plot_vacf_labels(vacf):
 
     assert x_act == x_exp
     assert y_act == y_exp
+
+
+def test_plot_vacf_start_stop_step(vacf, start=1, stop=9, step=2):
+    # Expected data to be plotted
+    x_exp = vacf.times[start:stop:step]
+    y_exp = vacf.results.timeseries[start:stop:step]
+
+    # Actual data returned from plot
+    (line,) = plot_vacf(vacf, start=start, stop=stop, step=step)
+    x_act, y_act = line.get_xydata().T
+
+    assert_allclose(x_act, x_exp)
+    assert_allclose(y_act, y_exp)
