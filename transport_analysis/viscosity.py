@@ -98,7 +98,9 @@ class ViscosityHelfand(AnalysisBase):
         )
 
         self._mass_array = self.atomgroup.masses
-        self._mass_reshape = self._mass_array.reshape(1, len(self._mass_array, 1))
+        self._mass_reshape = self._mass_array.reshape(
+            1, len(self._mass_array, 1)
+        )
 
         # 3D arrays of frames x particles x dimensionality
         # for velocities and positions
@@ -171,7 +173,10 @@ class ViscosityHelfand(AnalysisBase):
         # iterate through all possible lagtimes from 1 to number of frames
         for lag in lagtimes:
             # get difference of momentum * position shifted by "lag" frames
-            diff = masses * velocities[:-lag, :, :] * positions[:-lag, :, :] - masses * velocities[lag:, :, :] * positions[lag:, :, :]
+            diff = (
+                masses * velocities[:-lag, :, :] * positions[:-lag, :, :]
+                - masses * velocities[lag:, :, :] * positions[lag:, :, :]
+            )
 
             # square and sum each x(, y, z) diff per particle
             sq_diff = np.square(diff).sum(axis=-1)
