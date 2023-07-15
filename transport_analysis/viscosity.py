@@ -138,7 +138,10 @@ class ViscosityHelfand(AnalysisBase):
         self.dim_fac = len(self._dim)
 
     def _single_frame(self):
-        """Constructs array of velocities for VACF calculation."""
+        """
+        Constructs arrays of velocities and positions
+        for viscosity computation.
+        """
         # This runs once for each frame of the trajectory
 
         # The trajectory positions update automatically
@@ -162,7 +165,7 @@ class ViscosityHelfand(AnalysisBase):
         ]
 
     def _conclude(self):
-        r"""Calculates the VACF via the simple "windowed" algorithm."""
+        r"""Calculates viscosity via the simple "windowed" algorithm."""
         lagtimes = np.arange(1, self.n_frames)
 
         # improve precision with np.float64
