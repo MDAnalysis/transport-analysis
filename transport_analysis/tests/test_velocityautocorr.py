@@ -254,6 +254,45 @@ class TestVelocityAutocorr:
         # 24307638750.0 (act) agrees with 24307638888.888885 (exp) to 8 sig figs
         assert_approx_equal(sd_actual, sd_expected, significant=8)
 
+    @pytest.mark.parametrize(
+        "tdim, tdim_factor",
+        [
+            ("xyz", 3),
+            ("xy", 2),
+            ("xz", 2),
+            ("yz", 2),
+            ("x", 1),
+            ("y", 1),
+            ("z", 1),
+        ],
+    )
+    def test_sd_start_stop_step_all_dims(
+        self,
+        step_vtraj,
+        NSTEP,
+        tdim,
+        tdim_factor,
+        tstart=10,
+        tstop=1000,
+        tstep=10,
+    ):
+        # testing self-diffusivity calculated from the VACF of the
+        # "simple" windowed algorithm on unit velocity trajectory
+        # Integration results should match a separate integration method
+        # Simpson is used for the check
+        v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=False)
+        v_simple.run()
+        sd_actual = v_simple.sd(start=tstart, stop=tstop, step=tstep)
+        sd_expected = (
+            integrate.simpson(
+                characteristic_poly(NSTEP, tdim_factor)[tstart:tstop:tstep],
+                range(NSTEP)[tstart:tstop:tstep],
+            )
+            / tdim_factor
+        )
+        # 7705160166.66 (act) agrees with 7705162888.88 (exp) to 6 sig figs
+        assert_approx_equal(sd_actual, sd_expected, significant=6)
+
 
 class TestVACFFFT(object):
     @pytest.fixture(scope="class")
