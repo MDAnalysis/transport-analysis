@@ -1,5 +1,9 @@
 import pytest
-from numpy.testing import assert_almost_equal, assert_allclose
+from numpy.testing import (
+    assert_almost_equal,
+    assert_allclose,
+    assert_approx_equal,
+)
 
 from transport_analysis.velocityautocorr import (
     VelocityAutocorr as VACF,
@@ -7,6 +11,7 @@ from transport_analysis.velocityautocorr import (
 import MDAnalysis as mda
 import numpy as np
 import tidynamics
+from scipy import integrate
 
 from MDAnalysis.exceptions import NoDataError
 from MDAnalysisTests.datafiles import PRM_NCBOX, TRJ_NCBOX
@@ -24,7 +29,7 @@ def ag(u):
 
 @pytest.fixture(scope="module")
 def NSTEP():
-    nstep = 5000
+    nstep = 5001
     return nstep
 
 
@@ -217,6 +222,37 @@ class TestVelocityAutocorr:
 
         assert_allclose(x_act, x_exp)
         assert_allclose(y_act, y_exp)
+
+    @pytest.mark.parametrize(
+        "tdim, tdim_factor",
+        [
+            ("xyz", 3),
+            ("xy", 2),
+            ("xz", 2),
+            ("yz", 2),
+            ("x", 1),
+            ("y", 1),
+            ("z", 1),
+        ],
+    )
+    def test_sd_step_vtraj_all_dims(
+        self, step_vtraj, NSTEP, tdim, tdim_factor
+    ):
+        # testing self-diffusivity calculated from the VACF of the
+        # "simple" windowed algorithm on unit velocity trajectory
+        # Integration results should match a separate integration method
+        # Simpson is used for the check
+        v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=False)
+        v_simple.run()
+        sd_actual = v_simple.sd()
+        sd_expected = (
+            integrate.simpson(
+                characteristic_poly(NSTEP, tdim_factor), range(NSTEP)
+            )
+            / tdim_factor
+        )
+        # 24307638750.0 (act) agrees with 24307638888.888885 (exp) to 8 sig figs
+        assert_approx_equal(sd_actual, sd_expected, significant=8)
 
 
 class TestVACFFFT(object):
