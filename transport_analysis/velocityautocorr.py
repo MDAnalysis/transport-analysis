@@ -295,3 +295,36 @@ class VelocityAutocorr(AnalysisBase):
             )
             / self.dim_fac
         )
+
+    def sd_odd(self, start=0, stop=0, step=1):
+        """
+        Returns a self-diffusivity value using ``scipy.integrate.simpson``.
+        Recommended for use with an odd number of evenly spaced data points.
+        Analysis must be run prior to computing self-diffusivity.
+
+        Parameters
+        ----------
+        start : Optional[int]
+            The first frame of ``self.results.timeseries``
+            used for the calculation.
+        stop : Optional[int]
+            The frame of ``self.results.timeseries`` to stop at
+            for the calculation, non-inclusive.
+        step : Optional[int]
+            Number of frames to skip between each frame used
+            for the calculation.
+
+        Returns
+        -------
+        `numpy.float64`
+            The calculated self-diffusivity value for the analysis.
+        """
+        stop = self.n_frames if stop == 0 else stop
+
+        return (
+            integrate.simpson(
+                self.results.timeseries[start:stop:step],
+                self.times[start:stop:step],
+            )
+            / self.dim_fac
+        )
