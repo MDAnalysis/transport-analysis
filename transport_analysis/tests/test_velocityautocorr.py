@@ -391,11 +391,11 @@ class TestVACFFFT(object):
         # fft based tests require a slight decrease in expected prescision
         # primarily due to roundoff in fft(ifft()) calls.
         # relative accuracy expected to be around ~1e-12
-        v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
-        v_simple.run()
+        v_fft = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
+        v_fft.run()
         poly = characteristic_poly(NSTEP, tdim_factor)
         # this was relaxed from decimal=4 for numpy=1.13 test
-        assert_almost_equal(v_simple.results.timeseries, poly, decimal=3)
+        assert_almost_equal(v_fft.results.timeseries, poly, decimal=3)
 
     def test_fft_vs_simple_default(self, vacf, vacf_fft):
         # testing on the PRM_NCBOX, TRJ_NCBOX trajectory
@@ -427,13 +427,13 @@ class TestVACFFFT(object):
         # testing the fft algorithm on unit velocity trajectory
         # defined in step_vtraj()
         # test start stop step is working correctly
-        v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
-        v_simple.run(start=tstart, stop=tstop, step=tstep)
+        v_fft = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
+        v_fft.run(start=tstart, stop=tstop, step=tstep)
         poly = characteristic_poly(
             tstop, tdim_factor, first=tstart, step=tstep
         )
         # polynomial must take offset start into account
-        assert_almost_equal(v_simple.results.timeseries, poly, decimal=3)
+        assert_almost_equal(v_fft.results.timeseries, poly, decimal=3)
 
     @pytest.mark.parametrize(
         "tdim, tdim_factor",
@@ -454,9 +454,9 @@ class TestVACFFFT(object):
         # unit velocity trajectory
         # Integration results should match a separate integration method
         # Simpson is used for the check
-        v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
-        v_simple.run()
-        sd_actual = v_simple.sd()
+        v_fft = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
+        v_fft.run()
+        sd_actual = v_fft.sd()
         sd_expected = (
             integrate.simpson(
                 characteristic_poly(NSTEP, tdim_factor), range(NSTEP)
@@ -491,9 +491,9 @@ class TestVACFFFT(object):
         # testing self-diffusivity calculated from the VACF of the
         # "simple" windowed algorithm on unit velocity trajectory
         # check that start, stop, step is working correctly
-        v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
-        v_simple.run()
-        sd_actual = v_simple.sd(start=tstart, stop=tstop, step=tstep)
+        v_fft = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
+        v_fft.run()
+        sd_actual = v_fft.sd(start=tstart, stop=tstop, step=tstep)
         sd_expected = (
             integrate.simpson(
                 characteristic_poly(NSTEP, tdim_factor)[tstart:tstop:tstep],
@@ -521,9 +521,9 @@ class TestVACFFFT(object):
     ):
         # testing self-diffusivity (simpson) calculated from the fft VACF of the
         # unit velocity trajectory
-        v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
-        v_simple.run()
-        sd_actual = v_simple.sd_odd()
+        v_fft = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
+        v_fft.run()
+        sd_actual = v_fft.sd_odd()
         sd_expected = (
             integrate.trapezoid(
                 characteristic_poly(NSTEP, tdim_factor), range(NSTEP)
@@ -558,9 +558,9 @@ class TestVACFFFT(object):
         # testing self-diffusivity (simpson) calculated from the VACF of the
         # "simple" windowed algorithm on unit velocity trajectory
         # check that start, stop, step is working correctly
-        v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
-        v_simple.run()
-        sd_actual = v_simple.sd_odd(start=tstart, stop=tstop, step=tstep)
+        v_fft = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
+        v_fft.run()
+        sd_actual = v_fft.sd_odd(start=tstart, stop=tstop, step=tstep)
         sd_expected = (
             integrate.trapezoid(
                 characteristic_poly(NSTEP, tdim_factor)[tstart:tstop:tstep],
