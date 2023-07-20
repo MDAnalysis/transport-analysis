@@ -98,9 +98,7 @@ class ViscosityHelfand(AnalysisBase):
         )
 
         self._masses = self.atomgroup.masses
-        self._masses_rs = self._masses.reshape(
-            (1, len(self._masses), 1)
-        )
+        self._masses_rs = self._masses.reshape((1, len(self._masses), 1))
 
         # 3D arrays of frames x particles x dimensionality
         # for velocities and positions
@@ -168,17 +166,16 @@ class ViscosityHelfand(AnalysisBase):
         r"""Calculates viscosity via the simple "windowed" algorithm."""
         lagtimes = np.arange(1, self.n_frames)
 
-        # improve precision with np.float64
-        masses = self._masses_rs.astype(np.float64)
-        velocities = self._velocities.astype(np.float64)
-        positions = self._positions.astype(np.float64)
-
         # iterate through all possible lagtimes from 1 to number of frames
         for lag in lagtimes:
             # get difference of momentum * position shifted by "lag" frames
             diff = (
-                masses * velocities[:-lag, :, :] * positions[:-lag, :, :]
-                - masses * velocities[lag:, :, :] * positions[lag:, :, :]
+                self._masses_rs
+                * self._velocities[:-lag, :, :]
+                * self._positions[:-lag, :, :]
+                - self._masses_rs
+                * self._velocities[lag:, :, :]
+                * self._positions[lag:, :, :]
             )
 
             # square and sum each x(, y, z) diff per particle
