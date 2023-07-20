@@ -97,6 +97,8 @@ class ViscosityHelfand(AnalysisBase):
             (self.n_frames, self.n_particles)
         )
 
+        self._volumes = np.zeros((self.n_frames))
+
         self._masses = self.atomgroup.masses
         self._masses_rs = self._masses.reshape((1, len(self._masses), 1))
 
@@ -145,12 +147,19 @@ class ViscosityHelfand(AnalysisBase):
         # The trajectory positions update automatically
         # You can access the frame number using self._frame_index
 
-        # trajectory must have velocity information
-        if not (self._ts.has_velocities and self._ts.has_positions):
+        # trajectory must have velocity and position information
+        if not (
+            self._ts.has_velocities
+            and self._ts.has_positions
+            and self._ts.volume != 0
+        ):
             raise NoDataError(
                 "Helfand viscosity computation requires "
-                "velocities and positions in the trajectory"
+                "velocities, positions, and box volume in the trajectory"
             )
+
+        # fill volume array
+        self._volumes[self._frame_index] = self._ts.volume
 
         # set shape of velocity array
         self._velocities[self._frame_index] = self.atomgroup.velocities[
