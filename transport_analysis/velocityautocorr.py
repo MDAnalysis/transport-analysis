@@ -215,7 +215,10 @@ class VelocityAutocorr(AnalysisBase):
         # iterate through all possible lagtimes up to N
         for lag in range(N):
             # get product of velocities shifted by "lag" frames
-            veloc = self._velocities[: N - lag, :, :] * self._velocities[lag:, :, :]
+            veloc = (
+                self._velocities[: N - lag, :, :]
+                * self._velocities[lag:, :, :]
+            )
 
             # dot product of x(, y, z) velocities per particle
             sum_veloc = np.sum(veloc, axis=-1)
