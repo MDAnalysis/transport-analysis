@@ -141,7 +141,7 @@ class VelocityAutocorr(AnalysisBase):
         )
 
         # 3D array of frames x particles x dimensionality
-        self._velocity_array = np.zeros(
+        self._velocities = np.zeros(
             (self.n_frames, self.n_particles, self.dim_fac)
         )
         # self.results.timeseries not set here
@@ -183,7 +183,7 @@ class VelocityAutocorr(AnalysisBase):
             )
 
         # set shape of velocity array
-        self._velocity_array[self._frame_index] = self.atomgroup.velocities[
+        self._velocities[self._frame_index] = self.atomgroup.velocities[
             :, self._dim
         ]
 
@@ -201,10 +201,9 @@ class VelocityAutocorr(AnalysisBase):
 
     def _conclude_fft(self):  # with FFT, np.float64 bit prescision required.
         r"""Calculates the VACF via the FCA fast correlation algorithm."""
-        velocities = self._velocity_array.astype(np.float64)
         for n in range(self.n_particles):
             self.results.vacf_by_particle[:, n] = tidynamics.acf(
-                velocities[:, n, :]
+                self._velocities[:, n, :]
             )
         self.results.timeseries = self.results.vacf_by_particle.mean(axis=1)
 
@@ -213,13 +212,10 @@ class VelocityAutocorr(AnalysisBase):
         # total frames in trajectory, use N for readability
         N = self.n_frames
 
-        # improve precision with np.float64
-        velocities = self._velocity_array.astype(np.float64)
-
         # iterate through all possible lagtimes up to N
         for lag in range(N):
             # get product of velocities shifted by "lag" frames
-            veloc = velocities[: N - lag, :, :] * velocities[lag:, :, :]
+            veloc = self._velocities[: N - lag, :, :] * self._velocities[lag:, :, :]
 
             # dot product of x(, y, z) velocities per particle
             sum_veloc = np.sum(veloc, axis=-1)
