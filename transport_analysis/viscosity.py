@@ -97,18 +97,18 @@ class ViscosityHelfand(AnalysisBase):
             (self.n_frames, self.n_particles)
         )
 
-        self._mass_array = self.atomgroup.masses
-        self._mass_reshape = self._mass_array.reshape(
-            1, len(self._mass_array, 1)
+        self._masses = self.atomgroup.masses
+        self._masses_rs = self._masses.reshape(
+            (1, len(self._masses), 1)
         )
 
         # 3D arrays of frames x particles x dimensionality
         # for velocities and positions
-        self._velocity_array = np.zeros(
+        self._velocities = np.zeros(
             (self.n_frames, self.n_particles, self.dim_fac)
         )
 
-        self._position_array = np.zeros(
+        self._positions = np.zeros(
             (self.n_frames, self.n_particles, self.dim_fac)
         )
         # self.results.timeseries not set here
@@ -155,12 +155,12 @@ class ViscosityHelfand(AnalysisBase):
             )
 
         # set shape of velocity array
-        self._velocity_array[self._frame_index] = self.atomgroup.velocities[
+        self._velocities[self._frame_index] = self.atomgroup.velocities[
             :, self._dim
         ]
 
         # set shape of position array
-        self._position_array[self._frame_index] = self.atomgroup.positions[
+        self._positions[self._frame_index] = self.atomgroup.positions[
             :, self._dim
         ]
 
@@ -169,9 +169,9 @@ class ViscosityHelfand(AnalysisBase):
         lagtimes = np.arange(1, self.n_frames)
 
         # improve precision with np.float64
-        masses = self._mass_reshape.astype(np.float64)
-        velocities = self._velocity_array.astype(np.float64)
-        positions = self._position_array.astype(np.float64)
+        masses = self._masses_rs.astype(np.float64)
+        velocities = self._velocities.astype(np.float64)
+        positions = self._positions.astype(np.float64)
 
         # iterate through all possible lagtimes from 1 to number of frames
         for lag in lagtimes:
