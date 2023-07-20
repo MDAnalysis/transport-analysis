@@ -125,8 +125,8 @@ class VelocityAutocorr(AnalysisBase):
             )
 
         # args
-        self.dim_type = dim_type
-        self._parse_dim_type()
+        self.dim_type = dim_type.lower()
+        self._dim, self.dim_fac = self._parse_dim_type(self.dim_type)
         self.fft = fft
 
         # local
@@ -146,8 +146,9 @@ class VelocityAutocorr(AnalysisBase):
         )
         # self.results.timeseries not set here
 
-    def _parse_dim_type(self):
-        r"""Sets up the desired dimensionality of the VACF."""
+    @staticmethod
+    def _parse_dim_type(dim_str):
+        """Sets up the desired dimensionality of the VACF."""
         keys = {
             "x": [0],
             "y": [1],
@@ -158,17 +159,15 @@ class VelocityAutocorr(AnalysisBase):
             "xyz": [0, 1, 2],
         }
 
-        self.dim_type = self.dim_type.lower()
-
         try:
-            self._dim = keys[self.dim_type]
+            _dim = keys[dim_str]
         except KeyError:
             raise ValueError(
                 "invalid dim_type: {} specified, please specify one of xyz, "
-                "xy, xz, yz, x, y, z".format(self.dim_type)
+                "xy, xz, yz, x, y, z".format(dim_str)
             )
 
-        self.dim_fac = len(self._dim)
+        return _dim, len(_dim)
 
     def _single_frame(self):
         """Constructs array of velocities for VACF calculation."""
