@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 from MDAnalysis.analysis.base import AnalysisBase
 from MDAnalysis.core.groups import UpdatingAtomGroup
 from MDAnalysis.exceptions import NoDataError
+from MDAnalysis.units import constants
 import numpy as np
 
 if TYPE_CHECKING:
@@ -26,10 +27,8 @@ class ViscosityHelfand(AnalysisBase):
     atomgroup : AtomGroup
         An MDAnalysis :class:`~MDAnalysis.core.groups.AtomGroup`.
         Note that :class:`UpdatingAtomGroup` instances are not accepted.
-    vol_avg : float
-        Average volume over the course of the simulation.
     temp_avg : float (optional, default 300)
-        Average temperature over the course of the simulation.
+        Average temperature over the course of the simulation, in Kelvin.
     dim_type : {'xyz', 'xy', 'yz', 'xz', 'x', 'y', 'z'}
         Desired dimensions to be included in the viscosity calculation.
         Defaults to 'xyz'.
@@ -60,7 +59,6 @@ class ViscosityHelfand(AnalysisBase):
     def __init__(
         self,
         atomgroup: "AtomGroup",
-        vol_avg: float,
         temp_avg: float = 300.0,
         dim_type: str = "xyz",
         **kwargs,
@@ -79,6 +77,7 @@ class ViscosityHelfand(AnalysisBase):
             )
 
         # args
+        self.temp_avg = temp_avg
         self.dim_type = dim_type
         self._parse_dim_type()
         # self.fft = fft # consider whether fft is possible later
@@ -173,6 +172,8 @@ class ViscosityHelfand(AnalysisBase):
 
     def _conclude(self):
         r"""Calculates viscosity via the simple "windowed" algorithm."""
+        self._vol_avg = np.average(self._volumes)
+
         lagtimes = np.arange(1, self.n_frames)
 
         # iterate through all possible lagtimes from 1 to number of frames
@@ -193,5 +194,13 @@ class ViscosityHelfand(AnalysisBase):
             # average over # frames
             # update viscosity by particle array
             self.results.visc_by_particle[lag, :] = np.mean(sq_diff, axis=0)
+
+            # divide by 2, boltzman constant, vol_avg, and temp_avg
+            self.results.visc_by_particle = self.results.visc_by_particle / (
+                2
+                * constants["Boltzman_constant"]
+                * self._vol_avg
+                * self.temp_avg
+            )
         # average over # particles and update results array
         self.results.timeseries = self.results.visc_by_particle.mean(axis=1)
