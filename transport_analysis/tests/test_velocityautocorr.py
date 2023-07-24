@@ -12,6 +12,8 @@ import MDAnalysis as mda
 import numpy as np
 import tidynamics
 from scipy import integrate
+import MDAnalysis.analysis.msd as msd
+from scipy.stats import linregress
 
 from MDAnalysis.exceptions import NoDataError
 from MDAnalysisTests.datafiles import PRM_NCBOX, TRJ_NCBOX
@@ -47,12 +49,27 @@ def vacf(ag):
 def step_vtraj(NSTEP):
     v = np.arange(NSTEP)
     velocities = np.vstack([v, v, v]).T
-    # NSTEP frames x 1 atom x 3 dimensions, where NSTEP = 5000
+    # NSTEP frames x 1 atom x 3 dimensions, where NSTEP = 5001
     velocities_reshape = velocities.reshape([NSTEP, 1, 3])
     u = mda.Universe.empty(1, n_frames=NSTEP, velocities=True)
     for i, ts in enumerate(u.trajectory):
         u.atoms.velocities = velocities_reshape[i]
     return u
+
+
+# Position trajectory corresponding to unit velocity trajectory
+@pytest.fixture(scope="module")
+def step_vtraj_pos(NSTEP):
+    x = np.arange(NSTEP).astype(np.float64)
+    # Since initial position and velocity are 0 and acceleration is 1,
+    # position = 1/2t^2
+    x *= x / 2
+    positions = np.vstack([x, x, x]).T
+    # NSTEP frames x 1 atom x 3 dimensions, where NSTEP = 5001
+    positions_reshape = positions.reshape([NSTEP, 1, 3])
+    u_pos = mda.Universe.empty(1)
+    u_pos.load_new(positions_reshape)
+    return u_pos
 
 
 # Expected VACF results for step_vtraj
@@ -570,3 +587,40 @@ class TestVACFFFT(object):
         )
         # 7705160166.66 (exp) agrees with 7705162888.88 (act) to 6 sig figs
         assert_approx_equal(sd_actual, sd_expected, significant=6)
+
+    @pytest.mark.parametrize(
+        "tdim, tdim_factor",
+        [
+            ("xyz", 3),
+            ("xy", 2),
+            ("xz", 2),
+            ("yz", 2),
+            ("x", 1),
+            ("y", 1),
+            ("z", 1),
+        ],
+    )
+    def test_sd_msd_all_dims(
+        self, step_vtraj, step_vtraj_pos, tdim, tdim_factor
+    ):
+        # testing self-diffusivity calculated from the VACF (Green-Kubo)
+        # against self-diffusivity calculated from the MSD (Einstein)
+
+        # Green-Kubo self-diffusivity (actual)
+        v_fft = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
+        v_fft.run()
+        sd_actual = v_fft.sd()
+
+        # Einstein self-diffusivity (expected)
+        MSD = msd.EinsteinMSD(step_vtraj_pos, select="all", msd_type=tdim)
+        MSD.run()
+        msd_res = MSD.results.timeseries
+        lagtimes = np.arange(MSD.n_frames)
+        start_time, end_time = 3000, 5000
+        linear_model = linregress(
+            lagtimes[start_time:end_time], msd_res[start_time:end_time]
+        )
+        sd_expected = linear_model.slope / (2 * tdim_factor)
+
+        # 24307638750.0 (act) agrees with 24146066174.916477 (exp) to 2 sig figs
+        assert_approx_equal(sd_actual, sd_expected, significant=2)
