@@ -132,6 +132,7 @@ class VelocityAutocorr(AnalysisBase):
         # local
         self.atomgroup = atomgroup
         self.n_particles = len(self.atomgroup)
+        self._run_called = False
 
     def _prepare(self):
         """Set up velocity and VACF arrays before the analysis loop begins"""
@@ -179,7 +180,7 @@ class VelocityAutocorr(AnalysisBase):
         # trajectory must have velocity information
         if not self._ts.has_velocities:
             raise NoDataError(
-                "VACF computation requires velocities " "in the trajectory"
+                "VACF computation requires velocities in the trajectory"
             )
 
         # set shape of velocity array
@@ -206,6 +207,7 @@ class VelocityAutocorr(AnalysisBase):
                 self._velocities[:, n, :]
             )
         self.results.timeseries = self.results.vacf_by_particle.mean(axis=1)
+        self._run_called = True
 
     def _conclude_simple(self):
         r"""Calculates the VACF via the simple "windowed" algorithm."""
@@ -228,6 +230,7 @@ class VelocityAutocorr(AnalysisBase):
             self.results.vacf_by_particle[lag, :] = np.mean(sum_veloc, axis=0)
         # average over # particles and update results array
         self.results.timeseries = self.results.vacf_by_particle.mean(axis=1)
+        self._run_called = True
 
     def plot_vacf(self, start=0, stop=0, step=1):
         """
@@ -251,6 +254,8 @@ class VelocityAutocorr(AnalysisBase):
             A :class:`matplotlib.lines.Line2D` instance with
             the desired VACF plotting information.
         """
+        if not self._run_called:
+            raise RuntimeError("Analysis must be run prior to plotting")
 
         stop = self.n_frames if stop == 0 else stop
 
@@ -262,7 +267,7 @@ class VelocityAutocorr(AnalysisBase):
             self.results.timeseries[start:stop:step],
         )
 
-    def sd(self, start=0, stop=0, step=1):
+    def sd_gk(self, start=0, stop=0, step=1):
         """
         Returns a self-diffusivity value using ``scipy.integrate.trapezoid``.
         Analysis must be run prior to computing self-diffusivity.
@@ -284,6 +289,11 @@ class VelocityAutocorr(AnalysisBase):
         `numpy.float64`
             The calculated self-diffusivity value for the analysis.
         """
+        if not self._run_called:
+            raise RuntimeError(
+                "Analysis must be run prior to computing self-diffusivity"
+            )
+
         stop = self.n_frames if stop == 0 else stop
 
         return (
@@ -294,7 +304,7 @@ class VelocityAutocorr(AnalysisBase):
             / self.dim_fac
         )
 
-    def sd_odd(self, start=0, stop=0, step=1):
+    def sd_gk_odd(self, start=0, stop=0, step=1):
         """
         Returns a self-diffusivity value using ``scipy.integrate.simpson``.
         Recommended for use with an odd number of evenly spaced data points.
@@ -317,6 +327,11 @@ class VelocityAutocorr(AnalysisBase):
         `numpy.float64`
             The calculated self-diffusivity value for the analysis.
         """
+        if not self._run_called:
+            raise RuntimeError(
+                "Analysis must be run prior to computing self-diffusivity"
+            )
+
         stop = self.n_frames if stop == 0 else stop
 
         return (

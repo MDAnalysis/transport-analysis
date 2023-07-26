@@ -240,6 +240,12 @@ class TestVelocityAutocorr:
         assert_allclose(x_act, x_exp)
         assert_allclose(y_act, y_exp)
 
+    def test_plot_vacf_exception(self, step_vtraj):
+        v = VACF(step_vtraj.atoms, fft=False)
+        errmsg = "Analysis must be run"
+        with pytest.raises(RuntimeError, match=errmsg):
+            v.plot_vacf()
+
     @pytest.mark.parametrize(
         "tdim, tdim_factor",
         [
@@ -261,7 +267,7 @@ class TestVelocityAutocorr:
         # Simpson is used for the check
         v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=False)
         v_simple.run()
-        sd_actual = v_simple.sd()
+        sd_actual = v_simple.sd_gk()
         sd_expected = (
             integrate.simpson(
                 characteristic_poly(NSTEP, tdim_factor), range(NSTEP)
@@ -298,7 +304,7 @@ class TestVelocityAutocorr:
         # check that start, stop, step is working correctly
         v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=False)
         v_simple.run()
-        sd_actual = v_simple.sd(start=tstart, stop=tstop, step=tstep)
+        sd_actual = v_simple.sd_gk(start=tstart, stop=tstop, step=tstep)
         sd_expected = (
             integrate.simpson(
                 characteristic_poly(NSTEP, tdim_factor)[tstart:tstop:tstep],
@@ -328,7 +334,7 @@ class TestVelocityAutocorr:
         # "simple" windowed algorithm on unit velocity trajectory
         v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=False)
         v_simple.run()
-        sd_actual = v_simple.sd_odd()
+        sd_actual = v_simple.sd_gk_odd()
         sd_expected = (
             integrate.trapezoid(
                 characteristic_poly(NSTEP, tdim_factor), range(NSTEP)
@@ -365,7 +371,7 @@ class TestVelocityAutocorr:
         # check that start, stop, step is working correctly
         v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=False)
         v_simple.run()
-        sd_actual = v_simple.sd_odd(start=tstart, stop=tstop, step=tstep)
+        sd_actual = v_simple.sd_gk_odd(start=tstart, stop=tstop, step=tstep)
         sd_expected = (
             integrate.trapezoid(
                 characteristic_poly(NSTEP, tdim_factor)[tstart:tstop:tstep],
@@ -375,6 +381,18 @@ class TestVelocityAutocorr:
         )
         # 7705160166.66 (exp) agrees with 7705162888.88 (act) to 6 sig figs
         assert_approx_equal(sd_actual, sd_expected, significant=6)
+
+    def test_sd_gk_exception(self, step_vtraj):
+        v = VACF(step_vtraj.atoms, fft=False)
+        errmsg = "Analysis must be run"
+        with pytest.raises(RuntimeError, match=errmsg):
+            v.sd_gk()
+
+    def test_sd_gk_odd_exception(self):
+        v = VACF(step_vtraj.atoms, fft=False)
+        errmsg = "Analysis must be run"
+        with pytest.raises(RuntimeError, match=errmsg):
+            v.sd_gk_odd()
 
 
 class TestVACFFFT(object):
@@ -473,7 +491,7 @@ class TestVACFFFT(object):
         # Simpson is used for the check
         v_fft = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
         v_fft.run()
-        sd_actual = v_fft.sd()
+        sd_actual = v_fft.sd_gk()
         sd_expected = (
             integrate.simpson(
                 characteristic_poly(NSTEP, tdim_factor), range(NSTEP)
@@ -510,7 +528,7 @@ class TestVACFFFT(object):
         # check that start, stop, step is working correctly
         v_fft = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
         v_fft.run()
-        sd_actual = v_fft.sd(start=tstart, stop=tstop, step=tstep)
+        sd_actual = v_fft.sd_gk(start=tstart, stop=tstop, step=tstep)
         sd_expected = (
             integrate.simpson(
                 characteristic_poly(NSTEP, tdim_factor)[tstart:tstop:tstep],
@@ -540,7 +558,7 @@ class TestVACFFFT(object):
         # unit velocity trajectory
         v_fft = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
         v_fft.run()
-        sd_actual = v_fft.sd_odd()
+        sd_actual = v_fft.sd_gk_odd()
         sd_expected = (
             integrate.trapezoid(
                 characteristic_poly(NSTEP, tdim_factor), range(NSTEP)
@@ -577,7 +595,7 @@ class TestVACFFFT(object):
         # check that start, stop, step is working correctly
         v_fft = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
         v_fft.run()
-        sd_actual = v_fft.sd_odd(start=tstart, stop=tstop, step=tstep)
+        sd_actual = v_fft.sd_gk_odd(start=tstart, stop=tstop, step=tstep)
         sd_expected = (
             integrate.trapezoid(
                 characteristic_poly(NSTEP, tdim_factor)[tstart:tstop:tstep],
@@ -609,7 +627,7 @@ class TestVACFFFT(object):
         # Green-Kubo self-diffusivity (actual)
         v_fft = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
         v_fft.run()
-        sd_actual = v_fft.sd()
+        sd_actual = v_fft.sd_gk()
 
         # Einstein self-diffusivity (expected)
         MSD = msd.EinsteinMSD(step_vtraj_pos, select="all", msd_type=tdim)
