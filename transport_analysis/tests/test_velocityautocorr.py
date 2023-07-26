@@ -388,7 +388,7 @@ class TestVelocityAutocorr:
         with pytest.raises(RuntimeError, match=errmsg):
             v.sd_gk()
 
-    def test_sd_gk_odd_exception(self):
+    def test_sd_gk_odd_exception(self, step_vtraj):
         v = VACF(step_vtraj.atoms, fft=False)
         errmsg = "Analysis must be run"
         with pytest.raises(RuntimeError, match=errmsg):
