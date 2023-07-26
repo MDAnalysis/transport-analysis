@@ -148,61 +148,6 @@ class TestVelocityAutocorr:
         with pytest.raises(ValueError, match=errmsg):
             VACF(ag, dim_type=dimtype)
 
-    @pytest.mark.parametrize(
-        "tdim, tdim_factor",
-        [
-            ("xyz", 3),
-            ("xy", 2),
-            ("xz", 2),
-            ("yz", 2),
-            ("x", 1),
-            ("y", 1),
-            ("z", 1),
-        ],
-    )
-    def test_simple_step_vtraj_all_dims(
-        self, step_vtraj, NSTEP, tdim, tdim_factor
-    ):
-        # testing the "simple" windowed algorithm on unit velocity trajectory
-        # VACF results should fit the polynomial defined in
-        # characteristic_poly()
-        v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=False)
-        v_simple.run()
-        poly = characteristic_poly(NSTEP, tdim_factor)
-        assert_almost_equal(v_simple.results.timeseries, poly, decimal=4)
-
-    @pytest.mark.parametrize(
-        "tdim, tdim_factor",
-        [
-            ("xyz", 3),
-            ("xy", 2),
-            ("xz", 2),
-            ("yz", 2),
-            ("x", 1),
-            ("y", 1),
-            ("z", 1),
-        ],
-    )
-    def test_simple_start_stop_step_all_dims(
-        self,
-        step_vtraj,
-        tdim,
-        tdim_factor,
-        tstart=10,
-        tstop=1000,
-        tstep=10,
-    ):
-        # testing the simple "windowed" algorithm on unit velocity trajectory
-        # defined in step_vtraj()
-        # test start stop step is working correctly
-        v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=False)
-        v_simple.run(start=tstart, stop=tstop, step=tstep)
-        poly = characteristic_poly(
-            tstop, tdim_factor, first=tstart, step=tstep
-        )
-        # polynomial must take offset start into account
-        assert_almost_equal(v_simple.results.timeseries, poly, decimal=4)
-
     def test_plot_vacf(self, vacf):
         # Expected data to be plotted
         x_exp = vacf.times
@@ -246,18 +191,84 @@ class TestVelocityAutocorr:
         with pytest.raises(RuntimeError, match=errmsg):
             v.plot_vacf()
 
-    @pytest.mark.parametrize(
-        "tdim, tdim_factor",
-        [
-            ("xyz", 3),
-            ("xy", 2),
-            ("xz", 2),
-            ("yz", 2),
-            ("x", 1),
-            ("y", 1),
-            ("z", 1),
-        ],
-    )
+    def test_sd_gk_exception(self, step_vtraj):
+        v = VACF(step_vtraj.atoms, fft=False)
+        errmsg = "Analysis must be run"
+        with pytest.raises(RuntimeError, match=errmsg):
+            v.sd_gk()
+
+    def test_sd_gk_odd_exception(self, step_vtraj):
+        v = VACF(step_vtraj.atoms, fft=False)
+        errmsg = "Analysis must be run"
+        with pytest.raises(RuntimeError, match=errmsg):
+            v.sd_gk_odd()
+
+
+class TestVACFFFT(object):
+    @pytest.fixture(scope="class")
+    def vacf_fft(self, ag):
+        # fft VACF
+        v = VACF(ag, fft=True)
+        v.run()
+        return v
+
+    def test_fft_vs_simple_default(self, vacf, vacf_fft):
+        # testing on the PRM_NCBOX, TRJ_NCBOX trajectory
+        timeseries_simple = vacf.results.timeseries
+        timeseries_fft = vacf_fft.results.timeseries
+        assert_almost_equal(timeseries_simple, timeseries_fft, decimal=4)
+
+    def test_fft_vs_simple_default_per_particle(self, vacf, vacf_fft):
+        # check fft and simple give same result per particle
+        per_particle_simple = vacf.results.vacf_by_particle
+        per_particle_fft = vacf_fft.results.vacf_by_particle
+        assert_almost_equal(per_particle_simple, per_particle_fft, decimal=4)
+
+
+@pytest.mark.parametrize(
+    "tdim, tdim_factor",
+    [
+        ("xyz", 3),
+        ("xy", 2),
+        ("xz", 2),
+        ("yz", 2),
+        ("x", 1),
+        ("y", 1),
+        ("z", 1),
+    ],
+)
+class TestAllDims:
+    def test_simple_step_vtraj_all_dims(
+        self, step_vtraj, NSTEP, tdim, tdim_factor
+    ):
+        # testing the "simple" windowed algorithm on unit velocity trajectory
+        # VACF results should fit the polynomial defined in
+        # characteristic_poly()
+        v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=False)
+        v_simple.run()
+        poly = characteristic_poly(NSTEP, tdim_factor)
+        assert_almost_equal(v_simple.results.timeseries, poly, decimal=4)
+
+    def test_simple_start_stop_step_all_dims(
+        self,
+        step_vtraj,
+        tdim,
+        tdim_factor,
+        tstart=10,
+        tstop=1000,
+        tstep=10,
+    ):
+        # testing the simple "windowed" algorithm on unit velocity trajectory
+        # defined in step_vtraj()
+        # test start stop step is working correctly
+        v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=False)
+        v_simple.run(start=tstart, stop=tstop, step=tstep)
+        poly = characteristic_poly(
+            tstop, tdim_factor, first=tstart, step=tstep
+        )
+        # polynomial must take offset start into account
+        assert_almost_equal(v_simple.results.timeseries, poly, decimal=4)
+
     def test_sd_step_vtraj_all_dims(
         self, step_vtraj, NSTEP, tdim, tdim_factor
     ):
@@ -277,18 +288,6 @@ class TestVelocityAutocorr:
         # 24307638750.0 (act) agrees with 24307638888.888885 (exp) to 8 sig figs
         assert_approx_equal(sd_actual, sd_expected, significant=8)
 
-    @pytest.mark.parametrize(
-        "tdim, tdim_factor",
-        [
-            ("xyz", 3),
-            ("xy", 2),
-            ("xz", 2),
-            ("yz", 2),
-            ("x", 1),
-            ("y", 1),
-            ("z", 1),
-        ],
-    )
     def test_sd_start_stop_step_all_dims(
         self,
         step_vtraj,
@@ -315,18 +314,6 @@ class TestVelocityAutocorr:
         # 7705160166.66 (act) agrees with 7705162888.88 (exp) to 6 sig figs
         assert_approx_equal(sd_actual, sd_expected, significant=6)
 
-    @pytest.mark.parametrize(
-        "tdim, tdim_factor",
-        [
-            ("xyz", 3),
-            ("xy", 2),
-            ("xz", 2),
-            ("yz", 2),
-            ("x", 1),
-            ("y", 1),
-            ("z", 1),
-        ],
-    )
     def test_sd_odd_step_vtraj_all_dims(
         self, step_vtraj, NSTEP, tdim, tdim_factor
     ):
@@ -344,18 +331,6 @@ class TestVelocityAutocorr:
         # 24307638750.0 (exp) agrees with 24307638888.888885 (act) to 8 sig figs
         assert_approx_equal(sd_actual, sd_expected, significant=8)
 
-    @pytest.mark.parametrize(
-        "tdim, tdim_factor",
-        [
-            ("xyz", 3),
-            ("xy", 2),
-            ("xz", 2),
-            ("yz", 2),
-            ("x", 1),
-            ("y", 1),
-            ("z", 1),
-        ],
-    )
     def test_sd_odd_start_stop_step_all_dims(
         self,
         step_vtraj,
@@ -382,39 +357,6 @@ class TestVelocityAutocorr:
         # 7705160166.66 (exp) agrees with 7705162888.88 (act) to 6 sig figs
         assert_approx_equal(sd_actual, sd_expected, significant=6)
 
-    def test_sd_gk_exception(self, step_vtraj):
-        v = VACF(step_vtraj.atoms, fft=False)
-        errmsg = "Analysis must be run"
-        with pytest.raises(RuntimeError, match=errmsg):
-            v.sd_gk()
-
-    def test_sd_gk_odd_exception(self, step_vtraj):
-        v = VACF(step_vtraj.atoms, fft=False)
-        errmsg = "Analysis must be run"
-        with pytest.raises(RuntimeError, match=errmsg):
-            v.sd_gk_odd()
-
-
-class TestVACFFFT(object):
-    @pytest.fixture(scope="class")
-    def vacf_fft(self, ag):
-        # fft VACF
-        v = VACF(ag, fft=True)
-        v.run()
-        return v
-
-    @pytest.mark.parametrize(
-        "tdim, tdim_factor",
-        [
-            ("xyz", 3),
-            ("xy", 2),
-            ("xz", 2),
-            ("yz", 2),
-            ("x", 1),
-            ("y", 1),
-            ("z", 1),
-        ],
-    )
     def test_fft_step_vtraj_all_dims(
         self, step_vtraj, NSTEP, tdim, tdim_factor
     ):
@@ -432,30 +374,6 @@ class TestVACFFFT(object):
         # this was relaxed from decimal=4 for numpy=1.13 test
         assert_almost_equal(v_fft.results.timeseries, poly, decimal=3)
 
-    def test_fft_vs_simple_default(self, vacf, vacf_fft):
-        # testing on the PRM_NCBOX, TRJ_NCBOX trajectory
-        timeseries_simple = vacf.results.timeseries
-        timeseries_fft = vacf_fft.results.timeseries
-        assert_almost_equal(timeseries_simple, timeseries_fft, decimal=4)
-
-    def test_fft_vs_simple_default_per_particle(self, vacf, vacf_fft):
-        # check fft and simple give same result per particle
-        per_particle_simple = vacf.results.vacf_by_particle
-        per_particle_fft = vacf_fft.results.vacf_by_particle
-        assert_almost_equal(per_particle_simple, per_particle_fft, decimal=4)
-
-    @pytest.mark.parametrize(
-        "tdim, tdim_factor",
-        [
-            ("xyz", 3),
-            ("xy", 2),
-            ("xz", 2),
-            ("yz", 2),
-            ("x", 1),
-            ("y", 1),
-            ("z", 1),
-        ],
-    )
     def test_fft_start_stop_step_all_dims(
         self, step_vtraj, tdim, tdim_factor, tstart=10, tstop=1000, tstep=10
     ):
@@ -470,18 +388,6 @@ class TestVACFFFT(object):
         # polynomial must take offset start into account
         assert_almost_equal(v_fft.results.timeseries, poly, decimal=3)
 
-    @pytest.mark.parametrize(
-        "tdim, tdim_factor",
-        [
-            ("xyz", 3),
-            ("xy", 2),
-            ("xz", 2),
-            ("yz", 2),
-            ("x", 1),
-            ("y", 1),
-            ("z", 1),
-        ],
-    )
     def test_fft_sd_step_vtraj_all_dims(
         self, step_vtraj, NSTEP, tdim, tdim_factor
     ):
@@ -501,18 +407,6 @@ class TestVACFFFT(object):
         # 24307638750.0 (act) agrees with 24307638888.888885 (exp) to 8 sig figs
         assert_approx_equal(sd_actual, sd_expected, significant=8)
 
-    @pytest.mark.parametrize(
-        "tdim, tdim_factor",
-        [
-            ("xyz", 3),
-            ("xy", 2),
-            ("xz", 2),
-            ("yz", 2),
-            ("x", 1),
-            ("y", 1),
-            ("z", 1),
-        ],
-    )
     def test_fft_sd_start_stop_step_all_dims(
         self,
         step_vtraj,
@@ -539,18 +433,6 @@ class TestVACFFFT(object):
         # 7705160166.66 (act) agrees with 7705162888.88 (exp) to 6 sig figs
         assert_approx_equal(sd_actual, sd_expected, significant=6)
 
-    @pytest.mark.parametrize(
-        "tdim, tdim_factor",
-        [
-            ("xyz", 3),
-            ("xy", 2),
-            ("xz", 2),
-            ("yz", 2),
-            ("x", 1),
-            ("y", 1),
-            ("z", 1),
-        ],
-    )
     def test_fft_sd_odd_step_vtraj_all_dims(
         self, step_vtraj, NSTEP, tdim, tdim_factor
     ):
@@ -568,18 +450,6 @@ class TestVACFFFT(object):
         # 24307638750.0 (exp) agrees with 24307638888.888885 (act) to 8 sig figs
         assert_approx_equal(sd_actual, sd_expected, significant=8)
 
-    @pytest.mark.parametrize(
-        "tdim, tdim_factor",
-        [
-            ("xyz", 3),
-            ("xy", 2),
-            ("xz", 2),
-            ("yz", 2),
-            ("x", 1),
-            ("y", 1),
-            ("z", 1),
-        ],
-    )
     def test_fft_sd_odd_start_stop_step_all_dims(
         self,
         step_vtraj,
@@ -606,18 +476,6 @@ class TestVACFFFT(object):
         # 7705160166.66 (exp) agrees with 7705162888.88 (act) to 6 sig figs
         assert_approx_equal(sd_actual, sd_expected, significant=6)
 
-    @pytest.mark.parametrize(
-        "tdim, tdim_factor",
-        [
-            ("xyz", 3),
-            ("xy", 2),
-            ("xz", 2),
-            ("yz", 2),
-            ("x", 1),
-            ("y", 1),
-            ("z", 1),
-        ],
-    )
     def test_sd_msd_all_dims(
         self, step_vtraj, step_vtraj_pos, tdim, tdim_factor
     ):
