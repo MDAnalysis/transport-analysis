@@ -261,7 +261,9 @@ class VelocityAutocorr(AnalysisBase):
 
         fig, ax_vacf = plt.subplots()
         ax_vacf.set_xlabel("Time (ps)")
-        ax_vacf.set_ylabel("Velocity Autocorrelation Function (VACF) (Å)")
+        ax_vacf.set_ylabel(
+            "Velocity Autocorrelation Function (VACF) (Å / ps)^2"
+        )
         return ax_vacf.plot(
             self.times[start:stop:step],
             self.results.timeseries[start:stop:step],
@@ -340,4 +342,55 @@ class VelocityAutocorr(AnalysisBase):
                 self.times[start:stop:step],
             )
             / self.dim_fac
+        )
+
+    def plot_running_integral(self, start=0, stop=0, step=1, initial=0):
+        """
+        Returns a plot of the running integral of the
+        velocity autocorrelation function (VACF) via ``Matplotlib``.
+        Analysis must be run prior to plotting.
+
+        Parameters
+        ----------
+        start : Optional[int]
+            The first frame of ``self.results.timeseries``
+            used for the plot.
+        stop : Optional[int]
+            The frame of ``self.results.timeseries`` to stop at
+            for the plot, non-inclusive.
+        step : Optional[int]
+            Number of frames to skip between each plotted frame.
+        initial : Optional[float]
+            Inserted value at the beginning of the integrated result array.
+            Defaults to 0.
+
+        Returns
+        -------
+        :class:`matplotlib.lines.Line2D`
+            A :class:`matplotlib.lines.Line2D` instance with
+            the desired VACF plotting information.
+        """
+        if not self._run_called:
+            raise RuntimeError("Analysis must be run prior to plotting")
+
+        stop = self.n_frames if stop == 0 else stop
+
+        running_integral = (
+            integrate.cumulative_trapezoid(
+                self.results.timeseries[start:stop:step],
+                self.times[start:stop:step],
+                initial=initial,
+            )
+            / self.dim_fac
+        )
+
+        fig, ax_running_integral = plt.subplots()
+        ax_running_integral.set_xlabel("Time (ps)")
+        ax_running_integral.set_ylabel(
+            "Running Integral of the Velocity Autocorrelation Function (VACF)"
+            " (Å^D / ps)"
+        )
+        return ax_running_integral.plot(
+            self.times[start:stop:step],
+            running_integral,
         )
