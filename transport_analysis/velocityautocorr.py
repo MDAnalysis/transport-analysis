@@ -261,9 +261,7 @@ class VelocityAutocorr(AnalysisBase):
 
         fig, ax_vacf = plt.subplots()
         ax_vacf.set_xlabel("Time (ps)")
-        ax_vacf.set_ylabel(
-            "Velocity Autocorrelation Function (VACF)"
-        )
+        ax_vacf.set_ylabel("Velocity Autocorrelation Function (VACF)")
         return ax_vacf.plot(
             self.times[start:stop:step],
             self.results.timeseries[start:stop:step],
@@ -387,8 +385,7 @@ class VelocityAutocorr(AnalysisBase):
         fig, ax_running_integral = plt.subplots()
         ax_running_integral.set_xlabel("Time (ps)")
         ax_running_integral.set_ylabel(
-            "Running Integral of the Velocity Autocorrelation Function (VACF)"
-            " (Å^dimensionality / ps)"
+            "Running Integral of the VACF (Å^dimensionality / ps)"
         )
         return ax_running_integral.plot(
             self.times[start:stop:step],
