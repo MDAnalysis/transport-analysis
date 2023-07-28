@@ -163,7 +163,7 @@ class TestVelocityAutocorr:
     def test_plot_vacf_labels(self, vacf):
         # Expected labels
         x_exp = "Time (ps)"
-        y_exp = "Velocity Autocorrelation Function (VACF) (Å)"
+        y_exp = "Velocity Autocorrelation Function (VACF)"
 
         # Actual labels returned from plot
         (line,) = vacf.plot_vacf()
@@ -202,6 +202,73 @@ class TestVelocityAutocorr:
         errmsg = "Analysis must be run"
         with pytest.raises(RuntimeError, match=errmsg):
             v.sd_gk_odd()
+
+    def test_plot_running_integral(self, vacf):
+        # Expected data to be plotted
+        x_exp = vacf.times
+        y_exp = np.zeros(vacf.n_frames)
+
+        for i in range(1, vacf.n_frames):
+            y_exp[i] = (
+                integrate.trapezoid(
+                    vacf.results.timeseries[: i + 1], vacf.times[: i + 1]
+                )
+                / vacf.dim_fac
+            )
+
+        # Actual data returned from plot
+        (line,) = vacf.plot_running_integral()
+        x_act, y_act = line.get_xydata().T
+
+        assert_allclose(x_act, x_exp)
+        assert_allclose(y_act, y_exp)
+
+    def test_plot_running_integral_labels(self, vacf):
+        # Expected labels
+        x_exp = "Time (ps)"
+        y_exp = (
+            "Running Integral of the Velocity Autocorrelation Function"
+            " (VACF) (Å^dimensionality / ps)"
+        )
+
+        # Actual labels returned from plot
+        (line,) = vacf.plot_running_integral()
+        x_act = line.axes.get_xlabel()
+        y_act = line.axes.get_ylabel()
+
+        assert x_act == x_exp
+        assert y_act == y_exp
+
+    def test_plot_running_integral_start_stop_step(
+        self, vacf, start=1, stop=9, step=2
+    ):
+        t_range = range(start, stop, step)
+        # Expected data to be plotted
+        x_exp = vacf.times[start:stop:step]
+        y_exp = np.zeros(len(t_range))
+
+        for i, j in enumerate(t_range):
+            if i > 0:
+                y_exp[i] = (
+                    integrate.trapezoid(
+                        vacf.results.timeseries[start : j + 1 : step],
+                        vacf.times[start : j + 1 : step],
+                    )
+                    / vacf.dim_fac
+                )
+
+        # Actual data returned from plot
+        (line,) = vacf.plot_running_integral(start=start, stop=stop, step=step)
+        x_act, y_act = line.get_xydata().T
+
+        assert_allclose(x_act, x_exp)
+        assert_allclose(y_act, y_exp)
+
+    def test_plot_running_integral_exception(self, step_vtraj):
+        v = VACF(step_vtraj.atoms, fft=False)
+        errmsg = "Analysis must be run"
+        with pytest.raises(RuntimeError, match=errmsg):
+            v.plot_running_integral()
 
 
 class TestVACFFFT(object):
