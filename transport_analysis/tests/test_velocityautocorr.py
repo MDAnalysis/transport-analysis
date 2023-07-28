@@ -191,17 +191,17 @@ class TestVelocityAutocorr:
         with pytest.raises(RuntimeError, match=errmsg):
             v.plot_vacf()
 
-    def test_sd_gk_exception(self, step_vtraj):
+    def test_self_diffusivity_gk_exception(self, step_vtraj):
         v = VACF(step_vtraj.atoms, fft=False)
         errmsg = "Analysis must be run"
         with pytest.raises(RuntimeError, match=errmsg):
-            v.sd_gk()
+            v.self_diffusivity_gk()
 
-    def test_sd_gk_odd_exception(self, step_vtraj):
+    def test_self_diffusivity_gk_odd_exception(self, step_vtraj):
         v = VACF(step_vtraj.atoms, fft=False)
         errmsg = "Analysis must be run"
         with pytest.raises(RuntimeError, match=errmsg):
-            v.sd_gk_odd()
+            v.self_diffusivity_gk_odd()
 
     def test_plot_running_integral(self, vacf):
         # Expected data to be plotted
@@ -333,7 +333,7 @@ class TestAllDims:
         # polynomial must take offset start into account
         assert_almost_equal(v_simple.results.timeseries, poly, decimal=4)
 
-    def test_sd_step_vtraj_all_dims(
+    def test_self_diffusivity_step_vtraj_all_dims(
         self, step_vtraj, NSTEP, tdim, tdim_factor
     ):
         # testing self-diffusivity calculated from the VACF of the
@@ -342,7 +342,7 @@ class TestAllDims:
         # Simpson is used for the check
         v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=False)
         v_simple.run()
-        sd_actual = v_simple.sd_gk()
+        sd_actual = v_simple.self_diffusivity_gk()
         sd_expected = (
             integrate.simpson(
                 characteristic_poly(NSTEP, tdim_factor), range(NSTEP)
@@ -352,7 +352,7 @@ class TestAllDims:
         # 24307638750.0 (act) agrees with 24307638888.888885 (exp) to 8 sig figs
         assert_approx_equal(sd_actual, sd_expected, significant=8)
 
-    def test_sd_start_stop_step_all_dims(
+    def test_self_diffusivity_start_stop_step_all_dims(
         self,
         step_vtraj,
         NSTEP,
@@ -367,7 +367,9 @@ class TestAllDims:
         # check that start, stop, step is working correctly
         v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=False)
         v_simple.run()
-        sd_actual = v_simple.sd_gk(start=tstart, stop=tstop, step=tstep)
+        sd_actual = v_simple.self_diffusivity_gk(
+            start=tstart, stop=tstop, step=tstep
+        )
         sd_expected = (
             integrate.simpson(
                 characteristic_poly(NSTEP, tdim_factor)[tstart:tstop:tstep],
@@ -378,14 +380,14 @@ class TestAllDims:
         # 7705160166.66 (act) agrees with 7705162888.88 (exp) to 6 sig figs
         assert_approx_equal(sd_actual, sd_expected, significant=6)
 
-    def test_sd_odd_step_vtraj_all_dims(
+    def test_self_diffusivity_odd_step_vtraj_all_dims(
         self, step_vtraj, NSTEP, tdim, tdim_factor
     ):
         # testing self-diffusivity (simpson) calculated from the VACF of the
         # "simple" windowed algorithm on unit velocity trajectory
         v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=False)
         v_simple.run()
-        sd_actual = v_simple.sd_gk_odd()
+        sd_actual = v_simple.self_diffusivity_gk_odd()
         sd_expected = (
             integrate.trapezoid(
                 characteristic_poly(NSTEP, tdim_factor), range(NSTEP)
@@ -395,7 +397,7 @@ class TestAllDims:
         # 24307638750.0 (exp) agrees with 24307638888.888885 (act) to 8 sig figs
         assert_approx_equal(sd_actual, sd_expected, significant=8)
 
-    def test_sd_odd_start_stop_step_all_dims(
+    def test_self_diffusivity_odd_start_stop_step_all_dims(
         self,
         step_vtraj,
         NSTEP,
@@ -410,7 +412,9 @@ class TestAllDims:
         # check that start, stop, step is working correctly
         v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=False)
         v_simple.run()
-        sd_actual = v_simple.sd_gk_odd(start=tstart, stop=tstop, step=tstep)
+        sd_actual = v_simple.self_diffusivity_gk_odd(
+            start=tstart, stop=tstop, step=tstep
+        )
         sd_expected = (
             integrate.trapezoid(
                 characteristic_poly(NSTEP, tdim_factor)[tstart:tstop:tstep],
@@ -452,7 +456,7 @@ class TestAllDims:
         # polynomial must take offset start into account
         assert_almost_equal(v_fft.results.timeseries, poly, decimal=3)
 
-    def test_fft_sd_step_vtraj_all_dims(
+    def test_fft_self_diffusivity_step_vtraj_all_dims(
         self, step_vtraj, NSTEP, tdim, tdim_factor
     ):
         # testing self-diffusivity calculated from the fft VACF of the
@@ -461,7 +465,7 @@ class TestAllDims:
         # Simpson is used for the check
         v_fft = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
         v_fft.run()
-        sd_actual = v_fft.sd_gk()
+        sd_actual = v_fft.self_diffusivity_gk()
         sd_expected = (
             integrate.simpson(
                 characteristic_poly(NSTEP, tdim_factor), range(NSTEP)
@@ -471,7 +475,7 @@ class TestAllDims:
         # 24307638750.0 (act) agrees with 24307638888.888885 (exp) to 8 sig figs
         assert_approx_equal(sd_actual, sd_expected, significant=8)
 
-    def test_fft_sd_start_stop_step_all_dims(
+    def test_fft_self_diffusivity_start_stop_step_all_dims(
         self,
         step_vtraj,
         NSTEP,
@@ -486,7 +490,9 @@ class TestAllDims:
         # check that start, stop, step is working correctly
         v_fft = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
         v_fft.run()
-        sd_actual = v_fft.sd_gk(start=tstart, stop=tstop, step=tstep)
+        sd_actual = v_fft.self_diffusivity_gk(
+            start=tstart, stop=tstop, step=tstep
+        )
         sd_expected = (
             integrate.simpson(
                 characteristic_poly(NSTEP, tdim_factor)[tstart:tstop:tstep],
@@ -497,14 +503,14 @@ class TestAllDims:
         # 7705160166.66 (act) agrees with 7705162888.88 (exp) to 6 sig figs
         assert_approx_equal(sd_actual, sd_expected, significant=6)
 
-    def test_fft_sd_odd_step_vtraj_all_dims(
+    def test_fft_self_diffusivity_odd_step_vtraj_all_dims(
         self, step_vtraj, NSTEP, tdim, tdim_factor
     ):
         # testing self-diffusivity (simpson) calculated from the fft VACF of the
         # unit velocity trajectory
         v_fft = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
         v_fft.run()
-        sd_actual = v_fft.sd_gk_odd()
+        sd_actual = v_fft.self_diffusivity_gk_odd()
         sd_expected = (
             integrate.trapezoid(
                 characteristic_poly(NSTEP, tdim_factor), range(NSTEP)
@@ -514,7 +520,7 @@ class TestAllDims:
         # 24307638750.0 (exp) agrees with 24307638888.888885 (act) to 8 sig figs
         assert_approx_equal(sd_actual, sd_expected, significant=8)
 
-    def test_fft_sd_odd_start_stop_step_all_dims(
+    def test_fft_self_diffusivity_odd_start_stop_step_all_dims(
         self,
         step_vtraj,
         NSTEP,
@@ -529,7 +535,9 @@ class TestAllDims:
         # check that start, stop, step is working correctly
         v_fft = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
         v_fft.run()
-        sd_actual = v_fft.sd_gk_odd(start=tstart, stop=tstop, step=tstep)
+        sd_actual = v_fft.self_diffusivity_gk_odd(
+            start=tstart, stop=tstop, step=tstep
+        )
         sd_expected = (
             integrate.trapezoid(
                 characteristic_poly(NSTEP, tdim_factor)[tstart:tstop:tstep],
@@ -540,7 +548,7 @@ class TestAllDims:
         # 7705160166.66 (exp) agrees with 7705162888.88 (act) to 6 sig figs
         assert_approx_equal(sd_actual, sd_expected, significant=6)
 
-    def test_sd_msd_all_dims(
+    def test_self_diffusivity_msd_all_dims(
         self, step_vtraj, step_vtraj_pos, tdim, tdim_factor
     ):
         # testing self-diffusivity calculated from the VACF (Green-Kubo)
@@ -549,7 +557,7 @@ class TestAllDims:
         # Green-Kubo self-diffusivity (actual)
         v_fft = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
         v_fft.run()
-        sd_actual = v_fft.sd_gk()
+        sd_actual = v_fft.self_diffusivity_gk()
 
         # Einstein self-diffusivity (expected)
         MSD = msd.EinsteinMSD(step_vtraj_pos, select="all", msd_type=tdim)

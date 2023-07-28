@@ -267,7 +267,7 @@ class VelocityAutocorr(AnalysisBase):
             self.results.timeseries[start:stop:step],
         )
 
-    def sd_gk(self, start=0, stop=0, step=1):
+    def self_diffusivity_gk(self, start=0, stop=0, step=1):
         """
         Returns a self-diffusivity value using ``scipy.integrate.trapezoid``.
         Analysis must be run prior to computing self-diffusivity.
@@ -304,7 +304,7 @@ class VelocityAutocorr(AnalysisBase):
             / self.dim_fac
         )
 
-    def sd_gk_odd(self, start=0, stop=0, step=1):
+    def self_diffusivity_gk_odd(self, start=0, stop=0, step=1):
         """
         Returns a self-diffusivity value using ``scipy.integrate.simpson``.
         Recommended for use with an odd number of evenly spaced data points.
@@ -346,7 +346,8 @@ class VelocityAutocorr(AnalysisBase):
         """
         Returns a plot of the running integral of the
         velocity autocorrelation function (VACF) via ``Matplotlib``.
-        Analysis must be run prior to plotting.
+        In this case, the running integral is the integral of the VACF
+        divided by the dimensionality. Analysis must be run prior to plotting.
 
         Parameters
         ----------
