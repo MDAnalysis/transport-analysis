@@ -261,7 +261,7 @@ class VelocityAutocorr(AnalysisBase):
 
         fig, ax_vacf = plt.subplots()
         ax_vacf.set_xlabel("Time (ps)")
-        ax_vacf.set_ylabel("Velocity Autocorrelation Function (VACF)")
+        ax_vacf.set_ylabel("Velocity Autocorrelation Function (Å^2 / ps^2)")
         return ax_vacf.plot(
             self.times[start:stop:step],
             self.results.timeseries[start:stop:step],

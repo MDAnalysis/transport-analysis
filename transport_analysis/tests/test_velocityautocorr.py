@@ -163,7 +163,7 @@ class TestVelocityAutocorr:
     def test_plot_vacf_labels(self, vacf):
         # Expected labels
         x_exp = "Time (ps)"
-        y_exp = "Velocity Autocorrelation Function (VACF)"
+        y_exp = "Velocity Autocorrelation Function (Å^2 / ps^2)"
 
         # Actual labels returned from plot
         (line,) = vacf.plot_vacf()
