@@ -50,6 +50,7 @@ from MDAnalysis.exceptions import NoDataError
 import numpy as np
 import tidynamics
 import matplotlib.pyplot as plt
+from scipy import integrate
 from transport_analysis.due import due, Doi
 
 if TYPE_CHECKING:
@@ -124,13 +125,14 @@ class VelocityAutocorr(AnalysisBase):
             )
 
         # args
-        self.dim_type = dim_type
-        self._parse_dim_type()
+        self.dim_type = dim_type.lower()
+        self._dim, self.dim_fac = self._parse_dim_type(self.dim_type)
         self.fft = fft
 
         # local
         self.atomgroup = atomgroup
         self.n_particles = len(self.atomgroup)
+        self._run_called = False
 
     def _prepare(self):
         """Set up velocity and VACF arrays before the analysis loop begins"""
@@ -140,13 +142,14 @@ class VelocityAutocorr(AnalysisBase):
         )
 
         # 3D array of frames x particles x dimensionality
-        self._velocity_array = np.zeros(
+        self._velocities = np.zeros(
             (self.n_frames, self.n_particles, self.dim_fac)
         )
         # self.results.timeseries not set here
 
-    def _parse_dim_type(self):
-        r"""Sets up the desired dimensionality of the VACF."""
+    @staticmethod
+    def _parse_dim_type(dim_str):
+        """Sets up the desired dimensionality of the VACF."""
         keys = {
             "x": [0],
             "y": [1],
@@ -157,17 +160,15 @@ class VelocityAutocorr(AnalysisBase):
             "xyz": [0, 1, 2],
         }
 
-        self.dim_type = self.dim_type.lower()
-
         try:
-            self._dim = keys[self.dim_type]
+            _dim = keys[dim_str]
         except KeyError:
             raise ValueError(
                 "invalid dim_type: {} specified, please specify one of xyz, "
-                "xy, xz, yz, x, y, z".format(self.dim_type)
+                "xy, xz, yz, x, y, z".format(dim_str)
             )
 
-        self.dim_fac = len(self._dim)
+        return _dim, len(_dim)
 
     def _single_frame(self):
         """Constructs array of velocities for VACF calculation."""
@@ -179,11 +180,11 @@ class VelocityAutocorr(AnalysisBase):
         # trajectory must have velocity information
         if not self._ts.has_velocities:
             raise NoDataError(
-                "VACF computation requires velocities " "in the trajectory"
+                "VACF computation requires velocities in the trajectory"
             )
 
         # set shape of velocity array
-        self._velocity_array[self._frame_index] = self.atomgroup.velocities[
+        self._velocities[self._frame_index] = self.atomgroup.velocities[
             :, self._dim
         ]
 
@@ -201,25 +202,25 @@ class VelocityAutocorr(AnalysisBase):
 
     def _conclude_fft(self):  # with FFT, np.float64 bit prescision required.
         r"""Calculates the VACF via the FCA fast correlation algorithm."""
-        velocities = self._velocity_array.astype(np.float64)
         for n in range(self.n_particles):
             self.results.vacf_by_particle[:, n] = tidynamics.acf(
-                velocities[:, n, :]
+                self._velocities[:, n, :]
             )
         self.results.timeseries = self.results.vacf_by_particle.mean(axis=1)
+        self._run_called = True
 
     def _conclude_simple(self):
         r"""Calculates the VACF via the simple "windowed" algorithm."""
         # total frames in trajectory, use N for readability
         N = self.n_frames
 
-        # improve precision with np.float64
-        velocities = self._velocity_array.astype(np.float64)
-
         # iterate through all possible lagtimes up to N
         for lag in range(N):
             # get product of velocities shifted by "lag" frames
-            veloc = velocities[: N - lag, :, :] * velocities[lag:, :, :]
+            veloc = (
+                self._velocities[: N - lag, :, :]
+                * self._velocities[lag:, :, :]
+            )
 
             # dot product of x(, y, z) velocities per particle
             sum_veloc = np.sum(veloc, axis=-1)
@@ -229,6 +230,7 @@ class VelocityAutocorr(AnalysisBase):
             self.results.vacf_by_particle[lag, :] = np.mean(sum_veloc, axis=0)
         # average over # particles and update results array
         self.results.timeseries = self.results.vacf_by_particle.mean(axis=1)
+        self._run_called = True
 
     def plot_vacf(self, start=0, stop=0, step=1):
         """
@@ -252,13 +254,141 @@ class VelocityAutocorr(AnalysisBase):
             A :class:`matplotlib.lines.Line2D` instance with
             the desired VACF plotting information.
         """
+        if not self._run_called:
+            raise RuntimeError("Analysis must be run prior to plotting")
 
         stop = self.n_frames if stop == 0 else stop
 
         fig, ax_vacf = plt.subplots()
         ax_vacf.set_xlabel("Time (ps)")
-        ax_vacf.set_ylabel("Velocity Autocorrelation Function (VACF) (Å)")
+        ax_vacf.set_ylabel("Velocity Autocorrelation Function (Å^2 / ps^2)")
         return ax_vacf.plot(
             self.times[start:stop:step],
             self.results.timeseries[start:stop:step],
+        )
+
+    def self_diffusivity_gk(self, start=0, stop=0, step=1):
+        """
+        Returns a self-diffusivity value using ``scipy.integrate.trapezoid``.
+        Analysis must be run prior to computing self-diffusivity.
+
+        Parameters
+        ----------
+        start : Optional[int]
+            The first frame of ``self.results.timeseries``
+            used for the calculation.
+        stop : Optional[int]
+            The frame of ``self.results.timeseries`` to stop at
+            for the calculation, non-inclusive.
+        step : Optional[int]
+            Number of frames to skip between each frame used
+            for the calculation.
+
+        Returns
+        -------
+        `numpy.float64`
+            The calculated self-diffusivity value for the analysis.
+        """
+        if not self._run_called:
+            raise RuntimeError(
+                "Analysis must be run prior to computing self-diffusivity"
+            )
+
+        stop = self.n_frames if stop == 0 else stop
+
+        return (
+            integrate.trapezoid(
+                self.results.timeseries[start:stop:step],
+                self.times[start:stop:step],
+            )
+            / self.dim_fac
+        )
+
+    def self_diffusivity_gk_odd(self, start=0, stop=0, step=1):
+        """
+        Returns a self-diffusivity value using ``scipy.integrate.simpson``.
+        Recommended for use with an odd number of evenly spaced data points.
+        Analysis must be run prior to computing self-diffusivity.
+
+        Parameters
+        ----------
+        start : Optional[int]
+            The first frame of ``self.results.timeseries``
+            used for the calculation.
+        stop : Optional[int]
+            The frame of ``self.results.timeseries`` to stop at
+            for the calculation, non-inclusive.
+        step : Optional[int]
+            Number of frames to skip between each frame used
+            for the calculation.
+
+        Returns
+        -------
+        `numpy.float64`
+            The calculated self-diffusivity value for the analysis.
+        """
+        if not self._run_called:
+            raise RuntimeError(
+                "Analysis must be run prior to computing self-diffusivity"
+            )
+
+        stop = self.n_frames if stop == 0 else stop
+
+        return (
+            integrate.simpson(
+                self.results.timeseries[start:stop:step],
+                self.times[start:stop:step],
+            )
+            / self.dim_fac
+        )
+
+    def plot_running_integral(self, start=0, stop=0, step=1, initial=0):
+        """
+        Returns a plot of the running integral of the
+        velocity autocorrelation function (VACF) via ``Matplotlib``.
+        In this case, the running integral is the integral of the VACF
+        divided by the dimensionality. Analysis must be run prior to plotting.
+
+        Parameters
+        ----------
+        start : Optional[int]
+            The first frame of ``self.results.timeseries``
+            used for the plot.
+        stop : Optional[int]
+            The frame of ``self.results.timeseries`` to stop at
+            for the plot, non-inclusive.
+        step : Optional[int]
+            Number of frames to skip between each plotted frame.
+        initial : Optional[float]
+            Inserted value at the beginning of the integrated result array.
+            Defaults to 0.
+
+        Returns
+        -------
+        :class:`matplotlib.lines.Line2D`
+            A :class:`matplotlib.lines.Line2D` instance with
+            the desired VACF plotting information.
+        """
+        if not self._run_called:
+            raise RuntimeError("Analysis must be run prior to plotting")
+
+        stop = self.n_frames if stop == 0 else stop
+
+        running_integral = (
+            integrate.cumulative_trapezoid(
+                self.results.timeseries[start:stop:step],
+                self.times[start:stop:step],
+                initial=initial,
+            )
+            / self.dim_fac
+        )
+
+        fig, ax_running_integral = plt.subplots()
+        ax_running_integral.set_xlabel("Time (ps)")
+        ax_running_integral.set_ylabel(
+            "Running Integral of the VACF (Å^dimensionality / ps)"
+        )
+        return ax_running_integral.plot(
+            self.times[start:stop:step],
+            running_integral,
         )
