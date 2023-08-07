@@ -194,12 +194,12 @@ class ViscosityHelfand(AnalysisBase):
             # update viscosity by particle array
             self.results.visc_by_particle[lag, :] = np.mean(sq_diff, axis=0)
 
-            # divide by 2, boltzman constant, vol_avg, and temp_avg
-            self.results.visc_by_particle = self.results.visc_by_particle / (
-                2
-                * constants["Boltzman_constant"]
-                * self._vol_avg
-                * self.temp_avg
-            )
+        # divide by 2, boltzman constant, vol_avg, and temp_avg
+        self.results.visc_by_particle = self.results.visc_by_particle / (
+            2
+            * constants["Boltzmann_constant"]
+            * self._vol_avg
+            * self.temp_avg
+        )
         # average over # particles and update results array
         self.results.timeseries = self.results.visc_by_particle.mean(axis=1)
