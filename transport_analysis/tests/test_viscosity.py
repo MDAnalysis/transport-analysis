@@ -4,6 +4,9 @@ from transport_analysis.viscosity import (
     ViscosityHelfand as VH,
 )
 import MDAnalysis as mda
+from MDAnalysis.units import constants
+from MDAnalysis.transformations import set_dimensions
+import numpy as np
 
 from MDAnalysis.exceptions import NoDataError
 from MDAnalysisTests.datafiles import PRM_NCBOX, TRJ_NCBOX, PSF, DCD
@@ -71,8 +74,40 @@ def step_vtraj_full(NSTEP):
         set_dimensions(dim)(u.trajectory.ts)
 
     # mass of 16.0
-    u.add_TopologyAttr('masses', [16.0])
+    u.add_TopologyAttr("masses", [16.0])
     return u
+
+
+def characteristic_poly_helfand(
+    total_frames, n_dim, temp_avg=300.0, vol_avg=8.0
+):
+    result = np.zeros(total_frames)
+
+    for lag in range(total_frames):
+        sum = 0
+        sum = np.dtype("float64").type(sum)
+
+        for curr in range((total_frames - lag)):
+            # mass * velocities * positions
+            helf_diff = 16.0 * (curr + lag) * 1 / 2 * (
+                (curr + lag) ** 2
+            ) - 16.0 * curr * 1 / 2 * (curr**2)
+            sum += helf_diff**2
+
+        vis_helf = (
+            sum
+            * n_dim
+            / (
+                (total_frames - lag)
+                * 2
+                * constants["Boltzmann_constant"]
+                * vol_avg
+                * temp_avg
+            )
+        )
+
+        result[lag] = vis_helf
+    return result
 
 
 class TestViscosityHelfand:
