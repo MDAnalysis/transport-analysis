@@ -105,7 +105,7 @@ def characteristic_poly_helfand(
             / (
                 (total_frames - lag)
                 * 2
-                * constants["Boltzmann_constant"]
+                * constants["Boltzman_constant"]
                 * vol_avg
                 * temp_avg
             )
