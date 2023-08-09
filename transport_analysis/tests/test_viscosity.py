@@ -1,4 +1,5 @@
 import pytest
+from numpy.testing import assert_allclose
 
 from transport_analysis.viscosity import (
     ViscosityHelfand as VH,
@@ -79,19 +80,23 @@ def step_vtraj_full(NSTEP):
 
 
 def characteristic_poly_helfand(
-    total_frames, n_dim, temp_avg=300.0, vol_avg=8.0
+    total_frames,
+    n_dim,
+    temp_avg=300.0,
+    mass=16.0,
+    vol_avg=8.0,
 ):
     result = np.zeros(total_frames)
 
     for lag in range(total_frames):
         sum = 0
-        sum = np.dtype("float64").type(sum)
+        sum = np.float64(sum)
 
         for curr in range((total_frames - lag)):
             # mass * velocities * positions
-            helf_diff = 16.0 * (curr + lag) * 1 / 2 * (
-                (curr + lag) ** 2
-            ) - 16.0 * curr * 1 / 2 * (curr**2)
+            # simplified 16 * velocities * 1/2 time^2, where velocity = time
+            # based on full unit velocity trajectory
+            helf_diff = np.float64(mass / 2 * ((curr + lag) ** 3 - curr**3))
             sum += helf_diff**2
 
         vis_helf = (
@@ -133,3 +138,27 @@ class TestViscosityHelfand:
         errmsg = f"invalid dim_type: {dimtype}"
         with pytest.raises(ValueError, match=errmsg):
             VH(ag, dim_type=dimtype)
+
+
+@pytest.mark.parametrize(
+    "tdim, tdim_factor",
+    [
+        ("xyz", 3),
+        ("xy", 2),
+        ("xz", 2),
+        ("yz", 2),
+        ("x", 1),
+        ("y", 1),
+        ("z", 1),
+    ],
+)
+class TestAllDims:
+    def test_step_vtraj_all_dims(
+        self, step_vtraj_full, NSTEP, tdim, tdim_factor
+    ):
+        # Helfand viscosity results should agree with the unit velocity traj
+        # defined in characteristic_poly_helfand()
+        vis_h = VH(step_vtraj_full.atoms, dim_type=tdim)
+        vis_h.run()
+        poly = characteristic_poly_helfand(NSTEP, tdim_factor)
+        assert_allclose(vis_h.results.timeseries, poly)
