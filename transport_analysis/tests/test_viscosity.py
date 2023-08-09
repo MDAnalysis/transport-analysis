@@ -88,6 +88,12 @@ def characteristic_poly_helfand(
 ):
     result = np.zeros(total_frames)
 
+    # update when mda 2.6.0 releases with typo fix
+    try:
+        boltzmann = constants["Boltzmann_constant"]
+    except KeyError:
+        boltzmann = constants["Boltzman_constant"]
+
     for lag in range(total_frames):
         sum = 0
         sum = np.float64(sum)
@@ -102,13 +108,7 @@ def characteristic_poly_helfand(
         vis_helf = (
             sum
             * n_dim
-            / (
-                (total_frames - lag)
-                * 2
-                * constants["Boltzman_constant"]
-                * vol_avg
-                * temp_avg
-            )
+            / ((total_frames - lag) * 2 * boltzmann * vol_avg * temp_avg)
         )
 
         result[lag] = vis_helf

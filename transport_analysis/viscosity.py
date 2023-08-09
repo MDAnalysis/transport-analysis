@@ -112,6 +112,12 @@ class ViscosityHelfand(AnalysisBase):
         )
         # self.results.timeseries not set here
 
+        # update when mda 2.6.0 releases with typo fix
+        try:
+            self.boltzmann = constants["Boltzmann_constant"]
+        except KeyError:
+            self.boltzmann = constants["Boltzman_constant"]
+
     @staticmethod
     def _parse_dim_type(dim_str):
         r"""Sets up the desired dimensionality of the calculation."""
@@ -194,9 +200,9 @@ class ViscosityHelfand(AnalysisBase):
             # update viscosity by particle array
             self.results.visc_by_particle[lag, :] = np.mean(sq_diff, axis=0)
 
-        # divide by 2, boltzman constant, vol_avg, and temp_avg
+        # divide by 2, boltzmann constant, vol_avg, and temp_avg
         self.results.visc_by_particle = self.results.visc_by_particle / (
-            2 * constants["Boltzman_constant"] * self._vol_avg * self.temp_avg
+            2 * self.boltzmann * self._vol_avg * self.temp_avg
         )
         # average over # particles and update results array
         self.results.timeseries = self.results.visc_by_particle.mean(axis=1)
