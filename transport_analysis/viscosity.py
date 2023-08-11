@@ -21,6 +21,8 @@ if TYPE_CHECKING:
 class ViscosityHelfand(AnalysisBase):
     """
     Class to calculate viscosity using the Einstein-Helfand approach.
+    Note that the slope of the viscosity function must be taken to obtain the
+    viscosity.
 
     Parameters
     ----------
@@ -40,10 +42,11 @@ class ViscosityHelfand(AnalysisBase):
     dim_fac : int
         Dimensionality :math:`d` of the viscosity computation.
     results.timeseries : :class:`numpy.ndarray`
-        The averaged viscosity over all the particles with respect to lag-time.
-        Obtained after calling :meth:`ViscosityHelfand.run`
+        The averaged viscosity function over all the particles with respect
+        to lag-time. Obtained after calling :meth:`ViscosityHelfand.run`
     results.visc_by_particle : :class:`numpy.ndarray`
-        The viscosity of each individual particle with respect to lag-time.
+        The viscosity function of each individual particle with respect to
+        lag-time.
     start : Optional[int]
         The first frame of the trajectory used to compute the analysis.
     stop : Optional[int]
@@ -178,7 +181,9 @@ class ViscosityHelfand(AnalysisBase):
         ]
 
     def _conclude(self):
-        r"""Calculates viscosity via the simple "windowed" algorithm."""
+        """
+        Calculates the viscosity function via the simple "windowed" algorithm.
+        """
         self._vol_avg = np.average(self._volumes)
 
         lagtimes = np.arange(1, self.n_frames)
