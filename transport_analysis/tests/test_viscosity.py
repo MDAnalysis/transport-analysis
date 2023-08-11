@@ -86,6 +86,8 @@ def characteristic_poly_helfand(
     temp_avg=300.0,
     mass=16.0,
     vol_avg=8.0,
+    start=0,
+    step=1,
 ):
     # update when mda 2.6.0 releases with typo fix
     try:
@@ -95,20 +97,24 @@ def characteristic_poly_helfand(
     else:
         boltzmann = "Boltzmann_constant"
 
-    result = np.zeros((stop))
+    d = stop - start
+    frames_used = d // step + 1 if d % step != 0 else d / step
+    frames_used = int(frames_used)
+
+    result = np.zeros((frames_used))
     keys = {
         1: [0],
         2: [0, 1],
         3: [0, 1, 2],
     }
-    velocities = np.zeros((stop, 1, n_dim))
-    positions = np.zeros((stop, 1, n_dim))
+    velocities = np.zeros((frames_used, 1, n_dim))
+    positions = np.zeros((frames_used, 1, n_dim))
 
-    for i, ts in enumerate(test_universe.trajectory):
+    for i, ts in enumerate(test_universe.trajectory[start:stop:step]):
         velocities[i] = ts.velocities[:, keys[n_dim]]
         positions[i] = ts.positions[:, keys[n_dim]]
 
-    for lag in range(1, stop):
+    for lag in range(1, frames_used):
         diff = mass * (
             velocities[:-lag, :, :] * positions[:-lag, :, :]
             - velocities[lag:, :, :] * positions[lag:, :, :]
@@ -167,4 +173,24 @@ class TestAllDims:
         vis_h = VH(step_vtraj_full.atoms, dim_type=tdim)
         vis_h.run()
         poly = characteristic_poly_helfand(step_vtraj_full, NSTEP, tdim_factor)
+        assert_allclose(vis_h.results.timeseries, poly)
+
+    def test_start_stop_step_all_dims(
+        self,
+        step_vtraj_full,
+        tdim,
+        tdim_factor,
+        tstart=10,
+        tstop=1000,
+        tstep=10,
+    ):
+        # Helfand viscosity results should agree with the unit velocity traj
+        # defined in characteristic_poly_helfand()
+        # test start stop step is working correctly
+        vis_h = VH(step_vtraj_full.atoms, dim_type=tdim)
+        vis_h.run(start=tstart, stop=tstop, step=tstep)
+        # polynomial must take offset start into account
+        poly = characteristic_poly_helfand(
+            step_vtraj_full, tstop, tdim_factor, start=tstart, step=tstep
+        )
         assert_allclose(vis_h.results.timeseries, poly)
