@@ -80,38 +80,44 @@ def step_vtraj_full(NSTEP):
 
 
 def characteristic_poly_helfand(
-    total_frames,
+    test_universe,
+    stop,
     n_dim,
     temp_avg=300.0,
     mass=16.0,
     vol_avg=8.0,
 ):
-    result = np.zeros(total_frames)
-
     # update when mda 2.6.0 releases with typo fix
     try:
-        boltzmann = constants["Boltzmann_constant"]
+        constants["Boltzmann_constant"]
     except KeyError:
-        boltzmann = constants["Boltzman_constant"]
+        boltzmann = "Boltzman_constant"
+    else:
+        boltzmann = "Boltzmann_constant"
 
-    for lag in range(total_frames):
-        sum = 0
-        sum = np.float64(sum)
+    result = np.zeros((stop))
+    keys = {
+        1: [0],
+        2: [0, 1],
+        3: [0, 1, 2],
+    }
+    velocities = np.zeros((stop, 1, n_dim))
+    positions = np.zeros((stop, 1, n_dim))
 
-        for curr in range((total_frames - lag)):
-            # mass * velocities * positions
-            # simplified 16 * velocities * 1/2 time^2, where velocity = time
-            # based on full unit velocity trajectory
-            helf_diff = np.float64(mass / 2 * ((curr + lag) ** 3 - curr**3))
-            sum += helf_diff**2
+    for i, ts in enumerate(test_universe.trajectory):
+        velocities[i] = ts.velocities[:, keys[n_dim]]
+        positions[i] = ts.positions[:, keys[n_dim]]
 
-        vis_helf = (
-            sum
-            * n_dim
-            / ((total_frames - lag) * 2 * boltzmann * vol_avg * temp_avg)
+    for lag in range(1, stop):
+        diff = mass * (
+            velocities[:-lag, :, :] * positions[:-lag, :, :]
+            - velocities[lag:, :, :] * positions[lag:, :, :]
         )
 
-        result[lag] = vis_helf
+        sq_diff = np.square(diff).sum(axis=-1)
+        result[lag] = np.mean(sq_diff, axis=0)
+
+    result = result / (2 * constants[boltzmann] * vol_avg * temp_avg)
     return result
 
 
@@ -160,5 +166,5 @@ class TestAllDims:
         # defined in characteristic_poly_helfand()
         vis_h = VH(step_vtraj_full.atoms, dim_type=tdim)
         vis_h.run()
-        poly = characteristic_poly_helfand(NSTEP, tdim_factor)
+        poly = characteristic_poly_helfand(step_vtraj_full, NSTEP, tdim_factor)
         assert_allclose(vis_h.results.timeseries, poly)
