@@ -34,12 +34,6 @@ def ag_no_vels(u_no_vels):
 
 
 @pytest.fixture(scope="module")
-def NSTEP():
-    nstep = 5001
-    return nstep
-
-
-@pytest.fixture(scope="module")
 def visc_helfand(ag):
     vh_t = VH(ag)
     vh_t.run()
@@ -50,22 +44,24 @@ def visc_helfand(ag):
 # v = 1 at t = 1, v = 2 at t = 2, etc. for all components x, y, z
 # with mass, positions, and volume
 @pytest.fixture(scope="module")
-def step_vtraj_full(NSTEP):
+def step_vtraj_full():
+    nstep = 5001
+
     # Set up unit velocities
-    v = np.arange(NSTEP)
+    v = np.arange(nstep)
     velocities = np.vstack([v, v, v]).T
-    # NSTEP frames x 1 atom x 3 dimensions, where NSTEP = 5001
-    velocities_reshape = velocities.reshape([NSTEP, 1, 3])
+    # nstep frames x 1 atom x 3 dimensions, where nstep = 5001
+    velocities_reshape = velocities.reshape([nstep, 1, 3])
 
     # Positions derived from unit velocity setup
-    x = np.arange(NSTEP).astype(np.float64)
+    x = np.arange(nstep).astype(np.float64)
     # Since initial position and velocity are 0 and acceleration is 1,
     # position = 1/2t^2
     x *= x / 2
     positions = np.vstack([x, x, x]).T
-    # NSTEP frames x 1 atom x 3 dimensions, where NSTEP = 5001
-    positions_reshape = positions.reshape([NSTEP, 1, 3])
-    u = mda.Universe.empty(1, n_frames=NSTEP, velocities=True)
+    # nstep frames x 1 atom x 3 dimensions, where nstep = 5001
+    positions_reshape = positions.reshape([nstep, 1, 3])
+    u = mda.Universe.empty(1, n_frames=nstep, velocities=True)
 
     # volume of 8.0
     dim = [2, 2, 2, 90, 90, 90]
@@ -164,13 +160,13 @@ class TestViscosityHelfand:
 )
 class TestAllDims:
     def test_step_vtraj_all_dims(
-        self, step_vtraj_full, NSTEP, tdim, tdim_factor
+        self, step_vtraj_full, tdim, tdim_factor, nstep=5001
     ):
         # Helfand viscosity results should agree with the unit velocity traj
         # defined in characteristic_poly_helfand()
         vis_h = VH(step_vtraj_full.atoms, dim_type=tdim)
         vis_h.run()
-        poly = characteristic_poly_helfand(step_vtraj_full, NSTEP, tdim_factor)
+        poly = characteristic_poly_helfand(step_vtraj_full, nstep, tdim_factor)
         assert_allclose(vis_h.results.timeseries, poly)
 
     def test_start_stop_step_all_dims(
