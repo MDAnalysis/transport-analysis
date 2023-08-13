@@ -116,11 +116,9 @@ class ViscosityHelfand(AnalysisBase):
 
         # update when mda 2.6.0 releases with typo fix
         try:
-            constants["Boltzmann_constant"]
+            self.boltzmann = constants["Boltzmann_constant"]
         except KeyError:
-            self.boltzmann = "Boltzman_constant"
-        else:
-            self.boltzmann = "Boltzmann_constant"
+            self.boltzmann = constants["Boltzman_constant"]
 
     @staticmethod
     def _parse_dim_type(dim_str):
@@ -208,7 +206,7 @@ class ViscosityHelfand(AnalysisBase):
 
         # divide by 2, boltzmann constant, vol_avg, and temp_avg
         self.results.visc_by_particle = self.results.visc_by_particle / (
-            2 * constants[self.boltzmann] * self._vol_avg * self.temp_avg
+            2 * self.boltzmann * self._vol_avg * self.temp_avg
         )
         # average over # particles and update results array
         self.results.timeseries = self.results.visc_by_particle.mean(axis=1)
