@@ -115,6 +115,7 @@ class ViscosityHelfand(AnalysisBase):
         # self.results.timeseries not set here
 
         # update when mda 2.6.0 releases with typo fix
+        # (MDAnalysis Issue #4213)
         try:
             self.boltzmann = constants["Boltzmann_constant"]
         except KeyError:
