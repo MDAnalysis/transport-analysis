@@ -41,7 +41,7 @@ def NSTEP():
 
 @pytest.fixture(scope="module")
 def visc_helfand(ag):
-    vh_t = VH(ag, fft=False)
+    vh_t = VH(ag)
     vh_t.run()
     return vh_t
 
@@ -128,22 +128,20 @@ def characteristic_poly_helfand(
 
 
 class TestViscosityHelfand:
-    # fixtures are helpful functions that set up a test
-    # See more at https://docs.pytest.org/en/stable/how-to/fixtures.html
     def test_ag_accepted(self, ag):
-        VH(ag, fft=False)
+        VH(ag)
 
     def test_no_velocities(self, ag_no_vels):
         errmsg = "Helfand viscosity computation requires"
         with pytest.raises(NoDataError, match=errmsg):
-            v = VH(ag_no_vels, fft=False)
+            v = VH(ag_no_vels)
             v.run()
 
     def test_updating_ag_rejected(self, u):
         updating_ag = u.select_atoms("around 3.5 resid 1", updating=True)
         errmsg = "UpdatingAtomGroups are not valid"
         with pytest.raises(TypeError, match=errmsg):
-            VH(updating_ag, fft=False)
+            VH(updating_ag)
 
     @pytest.mark.parametrize("dimtype", ["foo", "bar", "yx", "zyx"])
     def test_dimtype_error(self, ag, dimtype):

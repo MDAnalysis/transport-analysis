@@ -83,7 +83,6 @@ class ViscosityHelfand(AnalysisBase):
         self.temp_avg = temp_avg
         self.dim_type = dim_type.lower()
         self._dim, self.dim_fac = self._parse_dim_type(self.dim_type)
-        # self.fft = fft # consider whether fft is possible later
 
         # local
         self.atomgroup = atomgroup
