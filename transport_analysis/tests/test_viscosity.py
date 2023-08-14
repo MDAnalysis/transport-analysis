@@ -34,6 +34,12 @@ def ag_no_vels(u_no_vels):
 
 
 @pytest.fixture(scope="module")
+def NSTEP():
+    nstep = 5001
+    return nstep
+
+
+@pytest.fixture(scope="module")
 def visc_helfand(ag):
     vh_t = VH(ag)
     vh_t.run()
@@ -44,24 +50,22 @@ def visc_helfand(ag):
 # v = 1 at t = 1, v = 2 at t = 2, etc. for all components x, y, z
 # with mass, positions, and volume
 @pytest.fixture(scope="module")
-def step_vtraj_full():
-    nstep = 5001
-
+def step_vtraj_full(NSTEP):
     # Set up unit velocities
-    v = np.arange(nstep)
+    v = np.arange(NSTEP)
     velocities = np.vstack([v, v, v]).T
-    # nstep frames x 1 atom x 3 dimensions, where nstep = 5001
-    velocities_reshape = velocities.reshape([nstep, 1, 3])
+    # NSTEP frames x 1 atom x 3 dimensions, where NSTEP = 5001
+    velocities_reshape = velocities.reshape([NSTEP, 1, 3])
 
     # Positions derived from unit velocity setup
-    x = np.arange(nstep).astype(np.float64)
+    x = np.arange(NSTEP).astype(np.float64)
     # Since initial position and velocity are 0 and acceleration is 1,
     # position = 1/2t^2
     x *= x / 2
     positions = np.vstack([x, x, x]).T
-    # nstep frames x 1 atom x 3 dimensions, where nstep = 5001
-    positions_reshape = positions.reshape([nstep, 1, 3])
-    u = mda.Universe.empty(1, n_frames=nstep, velocities=True)
+    # NSTEP frames x 1 atom x 3 dimensions, where NSTEP = 5001
+    positions_reshape = positions.reshape([NSTEP, 1, 3])
+    u = mda.Universe.empty(1, n_frames=NSTEP, velocities=True)
 
     # volume of 8.0
     dim = [2, 2, 2, 90, 90, 90]
@@ -85,13 +89,11 @@ def characteristic_poly_helfand(
     start=0,
     step=1,
 ):
-    # update when mda 2.6.0 releases with typo fix
+    # update when mda 2.6.0 releases with typo fix (MDAnalysis Issue #4213)
     try:
-        constants["Boltzmann_constant"]
+        boltzmann = constants["Boltzmann_constant"]
     except KeyError:
-        boltzmann = "Boltzman_constant"
-    else:
-        boltzmann = "Boltzmann_constant"
+        boltzmann = constants["Boltzman_constant"]
 
     d = stop - start
     frames_used = d // step + 1 if d % step != 0 else d / step
@@ -119,7 +121,7 @@ def characteristic_poly_helfand(
         sq_diff = np.square(diff).sum(axis=-1)
         result[lag] = np.mean(sq_diff, axis=0)
 
-    result = result / (2 * constants[boltzmann] * vol_avg * temp_avg)
+    result = result / (2 * boltzmann * vol_avg * temp_avg)
     return result
 
 
@@ -160,13 +162,13 @@ class TestViscosityHelfand:
 )
 class TestAllDims:
     def test_step_vtraj_all_dims(
-        self, step_vtraj_full, tdim, tdim_factor, nstep=5001
+        self, step_vtraj_full, NSTEP, tdim, tdim_factor
     ):
         # Helfand viscosity results should agree with the unit velocity traj
         # defined in characteristic_poly_helfand()
         vis_h = VH(step_vtraj_full.atoms, dim_type=tdim)
         vis_h.run()
-        poly = characteristic_poly_helfand(step_vtraj_full, nstep, tdim_factor)
+        poly = characteristic_poly_helfand(step_vtraj_full, NSTEP, tdim_factor)
         assert_allclose(vis_h.results.timeseries, poly)
 
     def test_start_stop_step_all_dims(
