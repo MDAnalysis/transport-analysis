@@ -147,6 +147,53 @@ class TestViscosityHelfand:
         with pytest.raises(ValueError, match=errmsg):
             VH(ag, dim_type=dimtype)
 
+    def test_plot_viscosity_function(self, visc_helfand):
+        # Expected data to be plotted
+        x_exp = visc_helfand.times
+        y_exp = visc_helfand.results.timeseries
+
+        # Actual data returned from plot
+        (line,) = visc_helfand.plot_viscosity_function()
+        x_act, y_act = line.get_xydata().T
+
+        assert_allclose(x_act, x_exp)
+        assert_allclose(y_act, y_exp)
+
+    def test_plot_viscosity_function_labels(self, visc_helfand):
+        # Expected labels
+        x_exp = "Time (ps)"
+        y_exp = "Viscosity Function"  # TODO: Specify units
+
+        # Actual labels returned from plot
+        (line,) = visc_helfand.plot_viscosity_function()
+        x_act = line.axes.get_xlabel()
+        y_act = line.axes.get_ylabel()
+
+        assert x_act == x_exp
+        assert y_act == y_exp
+
+    def test_plot_viscosity_function_start_stop_step(
+        self, visc_helfand, start=1, stop=9, step=2
+    ):
+        # Expected data to be plotted
+        x_exp = visc_helfand.times[start:stop:step]
+        y_exp = visc_helfand.results.timeseries[start:stop:step]
+
+        # Actual data returned from plot
+        (line,) = visc_helfand.plot_viscosity_function(
+            start=start, stop=stop, step=step
+        )
+        x_act, y_act = line.get_xydata().T
+
+        assert_allclose(x_act, x_exp)
+        assert_allclose(y_act, y_exp)
+
+    def test_plot_viscosity_function_exception(self, step_vtraj_full):
+        vis_h = VH(step_vtraj_full.atoms)
+        errmsg = "Analysis must be run"
+        with pytest.raises(RuntimeError, match=errmsg):
+            vis_h.plot_viscosity_function()
+
 
 @pytest.mark.parametrize(
     "tdim, tdim_factor",

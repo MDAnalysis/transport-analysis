@@ -13,6 +13,7 @@ from MDAnalysis.core.groups import UpdatingAtomGroup
 from MDAnalysis.exceptions import NoDataError
 from MDAnalysis.units import constants
 import numpy as np
+import matplotlib.pyplot as plt
 
 if TYPE_CHECKING:
     from MDAnalysis.core.universe import AtomGroup
@@ -87,6 +88,7 @@ class ViscosityHelfand(AnalysisBase):
         # local
         self.atomgroup = atomgroup
         self.n_particles = len(self.atomgroup)
+        self._run_called = False
 
     def _prepare(self):
         """
@@ -211,3 +213,41 @@ class ViscosityHelfand(AnalysisBase):
         )
         # average over # particles and update results array
         self.results.timeseries = self.results.visc_by_particle.mean(axis=1)
+        self._run_called = True
+
+    def plot_viscosity_function(self, start=0, stop=0, step=1):
+        """
+        Returns a viscosity function plot via ``Matplotlib``. Usage
+        of this plot is recommended to help determine where to take the
+        slope of the viscosity function to obtain the viscosity.
+        Analysis must be run prior to plotting.
+
+        Parameters
+        ----------
+        start : Optional[int]
+            The first frame of ``self.results.timeseries``
+            used for the plot.
+        stop : Optional[int]
+            The frame of ``self.results.timeseries`` to stop at
+            for the plot, non-inclusive.
+        step : Optional[int]
+            Number of frames to skip between each plotted frame.
+
+        Returns
+        -------
+        :class:`matplotlib.lines.Line2D`
+            A :class:`matplotlib.lines.Line2D` instance with
+            the desired viscosity function plotting information.
+        """
+        if not self._run_called:
+            raise RuntimeError("Analysis must be run prior to plotting")
+
+        stop = self.n_frames if stop == 0 else stop
+
+        fig, ax_vacf = plt.subplots()
+        ax_vacf.set_xlabel("Time (ps)")
+        ax_vacf.set_ylabel("Viscosity Function")  # TODO: Specify units
+        return ax_vacf.plot(
+            self.times[start:stop:step],
+            self.results.timeseries[start:stop:step],
+        )
