@@ -386,7 +386,7 @@ class VelocityAutocorr(AnalysisBase):
         fig, ax_running_integral = plt.subplots()
         ax_running_integral.set_xlabel("Time (ps)")
         ax_running_integral.set_ylabel(
-            "Running Integral of the VACF (Å^dimensionality / ps)"
+            "Running Integral of the VACF (Å^2 / ps)"
         )
         return ax_running_integral.plot(
             self.times[start:stop:step],
