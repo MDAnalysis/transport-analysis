@@ -58,6 +58,10 @@ class ViscosityHelfand(AnalysisBase):
         Number of frames analysed in the trajectory.
     n_particles : int
         Number of particles viscosity was calculated over.
+    running_viscosity : :class:`numpy.ndarray`
+        The running viscosity of the analysis calculated from dividing
+        ``results.timeseries`` by the corresponding times. Obtained after
+        calling :meth:`ViscosityHelfand.plot_running_viscosity`
     """
 
     def __init__(
@@ -244,10 +248,55 @@ class ViscosityHelfand(AnalysisBase):
 
         stop = self.n_frames if stop == 0 else stop
 
-        fig, ax_vacf = plt.subplots()
-        ax_vacf.set_xlabel("Time (ps)")
-        ax_vacf.set_ylabel("Viscosity Function")  # TODO: Specify units
-        return ax_vacf.plot(
+        fig, ax_visc = plt.subplots()
+        ax_visc.set_xlabel("Time (ps)")
+        ax_visc.set_ylabel("Viscosity Function")  # TODO: Specify units
+        return ax_visc.plot(
             self.times[start:stop:step],
             self.results.timeseries[start:stop:step],
+        )
+
+    def plot_running_viscosity(self, start=1, stop=0, step=1):
+        """
+        Returns a running viscosity plot via ``Matplotlib``. `start` is
+        set to `1` by default to avoid division by 0.
+        Usage of this plot will give an idea of the viscosity over the course
+        of the simulation but it is recommended for users to exercise their
+        best judgement and take the slope of the viscosity function to obtain
+        viscosity rather than use the running viscosity as a final result.
+        Analysis must be run prior to plotting.
+
+        Parameters
+        ----------
+        start : Optional[int]
+            The first frame of ``self.results.timeseries``
+            used for the plot.
+        stop : Optional[int]
+            The frame of ``self.results.timeseries`` to stop at
+            for the plot, non-inclusive.
+        step : Optional[int]
+            Number of frames to skip between each plotted frame.
+
+        Returns
+        -------
+        :class:`matplotlib.lines.Line2D`
+            A :class:`matplotlib.lines.Line2D` instance with
+            the desired running viscosity plotting information.
+        """
+        if not self._run_called:
+            raise RuntimeError("Analysis must be run prior to plotting")
+
+        stop = self.n_frames if stop == 0 else stop
+
+        self.running_viscosity = (
+            self.results.timeseries[start:stop:step]
+            / self.times[start:stop:step]
+        )
+
+        fig, ax_running_visc = plt.subplots()
+        ax_running_visc.set_xlabel("Time (ps)")
+        ax_running_visc.set_ylabel("Running Viscosity")  # TODO: Specify units
+        return ax_running_visc.plot(
+            self.times[start:stop:step],
+            self.running_viscosity,
         )
