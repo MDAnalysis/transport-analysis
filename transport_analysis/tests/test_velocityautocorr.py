@@ -226,7 +226,7 @@ class TestVelocityAutocorr:
     def test_plot_running_integral_labels(self, vacf):
         # Expected labels
         x_exp = "Time (ps)"
-        y_exp = "Running Integral of the VACF (Å^dimensionality / ps)"
+        y_exp = "Running Integral of the VACF (Å^2 / ps)"
 
         # Actual labels returned from plot
         (line,) = vacf.plot_running_integral()
