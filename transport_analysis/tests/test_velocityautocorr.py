@@ -173,6 +173,19 @@ class TestVelocityAutocorr:
         assert x_act == x_exp
         assert y_act == y_exp
 
+    def test_plot_vacf_custom_labels(self, vacf):
+        # Expected labels
+        x_exp = "Custom x-label"
+        y_exp = "Custom VACF"
+
+        # Actual labels returned from plot
+        (line,) = vacf.plot_vacf(xlabel=x_exp, ylabel=y_exp)
+        x_act = line.axes.get_xlabel()
+        y_act = line.axes.get_ylabel()
+
+        assert x_act == x_exp
+        assert y_act == y_exp
+
     def test_plot_vacf_start_stop_step(self, vacf, start=1, stop=9, step=2):
         # Expected data to be plotted
         x_exp = vacf.times[start:stop:step]
@@ -230,6 +243,19 @@ class TestVelocityAutocorr:
 
         # Actual labels returned from plot
         (line,) = vacf.plot_running_integral()
+        x_act = line.axes.get_xlabel()
+        y_act = line.axes.get_ylabel()
+
+        assert x_act == x_exp
+        assert y_act == y_exp
+
+    def test_plot_running_integral_custom_labels(self, vacf):
+        # Expected labels
+        x_exp = "Custom x-label"
+        y_exp = "Custom Running Integral"
+
+        # Actual labels returned from plot
+        (line,) = vacf.plot_running_integral(xlabel=x_exp, ylabel=y_exp)
         x_act = line.axes.get_xlabel()
         y_act = line.axes.get_ylabel()
 

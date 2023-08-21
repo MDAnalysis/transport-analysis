@@ -232,7 +232,14 @@ class VelocityAutocorr(AnalysisBase):
         self.results.timeseries = self.results.vacf_by_particle.mean(axis=1)
         self._run_called = True
 
-    def plot_vacf(self, start=0, stop=0, step=1):
+    def plot_vacf(
+        self,
+        start=0,
+        stop=0,
+        step=1,
+        xlabel="Time (ps)",
+        ylabel="Velocity Autocorrelation Function (Å^2 / ps^2)",
+    ):
         """
         Returns a velocity autocorrelation function (VACF) plot via
         ``Matplotlib``. Analysis must be run prior to plotting.
@@ -247,6 +254,11 @@ class VelocityAutocorr(AnalysisBase):
             for the plot, non-inclusive.
         step : Optional[int]
             Number of frames to skip between each plotted frame.
+        xlabel : Optional[str]
+            The x-axis label text. Defaults to "Time (ps)".
+        ylabel : Optional[str]
+            The y-axis label text.
+            Defaults to "Velocity Autocorrelation Function (Å^2 / ps^2)".
 
         Returns
         -------
@@ -260,8 +272,8 @@ class VelocityAutocorr(AnalysisBase):
         stop = self.n_frames if stop == 0 else stop
 
         fig, ax_vacf = plt.subplots()
-        ax_vacf.set_xlabel("Time (ps)")
-        ax_vacf.set_ylabel("Velocity Autocorrelation Function (Å^2 / ps^2)")
+        ax_vacf.set_xlabel(xlabel)
+        ax_vacf.set_ylabel(ylabel)
         return ax_vacf.plot(
             self.times[start:stop:step],
             self.results.timeseries[start:stop:step],
@@ -342,7 +354,15 @@ class VelocityAutocorr(AnalysisBase):
             / self.dim_fac
         )
 
-    def plot_running_integral(self, start=0, stop=0, step=1, initial=0):
+    def plot_running_integral(
+        self,
+        start=0,
+        stop=0,
+        step=1,
+        initial=0,
+        xlabel="Time (ps)",
+        ylabel="Running Integral of the VACF (Å^2 / ps)",
+    ):
         """
         Returns a plot of the running integral of the
         velocity autocorrelation function (VACF) via ``Matplotlib``.
@@ -362,6 +382,11 @@ class VelocityAutocorr(AnalysisBase):
         initial : Optional[float]
             Inserted value at the beginning of the integrated result array.
             Defaults to 0.
+        xlabel : Optional[str]
+            The x-axis label text. Defaults to "Time (ps)".
+        ylabel : Optional[str]
+            The y-axis label text.
+            Defaults to "Running Integral of the VACF (Å^2 / ps)".
 
         Returns
         -------
@@ -384,10 +409,8 @@ class VelocityAutocorr(AnalysisBase):
         )
 
         fig, ax_running_integral = plt.subplots()
-        ax_running_integral.set_xlabel("Time (ps)")
-        ax_running_integral.set_ylabel(
-            "Running Integral of the VACF (Å^2 / ps)"
-        )
+        ax_running_integral.set_xlabel(xlabel)
+        ax_running_integral.set_ylabel(ylabel)
         return ax_running_integral.plot(
             self.times[start:stop:step],
             running_integral,
