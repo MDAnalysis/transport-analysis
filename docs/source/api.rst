@@ -9,3 +9,4 @@ API Documentation
    :caption: API Reference
 
    api/velocityautocorr
+   api/viscosity
