@@ -41,8 +41,8 @@ doc = [
 ]
 
 # [project.urls]
-# source = "https://github.com/MDAnalysis/transport_analysis"
-# documentation = "https://transport_analysis.readthedocs.io"
+# source = "https://github.com/MDAnalysis/transport-analysis"
+# documentation = "https://transport-analysis.readthedocs.io"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
