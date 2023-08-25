@@ -1,6 +1,6 @@
 """
-VelocityAutocorr --- :mod:`transport_analysis.analysis.VelocityAutocorr`
-========================================================================
+Velocity Autocorrelation Function --- :mod:`transport_analysis.velocityautocorr`
+================================================================================
 
 This module offers a class to efficiently calculate a velocity
 autocorrelation function (VACF). Averaging over all atoms in the atom group
@@ -20,7 +20,11 @@ This example uses the files :data:`~MDAnalysis.tests.datafiles.PRM_NCBOX` and
 :data:`~MDAnalysis.tests.datafiles.TRJ_NCBOX` from the MDAnalysis test suite.
 To get started, execute  ::
 
-   >>> import transport_analysis as ta
+   # imports
+   >>> import MDAnalysis as mda
+   >>> from transport_analysis.velocityautocorr import VelocityAutocorr
+
+   # test data for this example
    >>> from MDAnalysis.tests.datafiles import PRM_NCBOX, TRJ_NCBOX
 
 We will calculate the VACF of an atom group of all water atoms in
@@ -32,10 +36,11 @@ residues 1-5. To select these atoms:
 We can run the calculation using any variable of choice such as
 ``wat_vacf`` and access our results using ``wat_vacf.results.timeseries``:
 
-   >>> wat_vacf = ta.VelocityAutocorr(ag).run()
+   >>> wat_vacf = VelocityAutocorr(ag).run()
    >>> wat_vacf.results.timeseries
-   [275.62075467 -18.42008255 -23.94383428  41.41415381  -2.3164344
-   -35.66393559 -22.66874897  -3.97575003   6.57888933  -5.29065096]
+   array([275.62075467, -18.42008255, -23.94383428,  41.41415381,
+        -2.3164344 , -35.66393559, -22.66874897,  -3.97575003,
+         6.57888933,  -5.29065096])
 
 Notice that this example data is insufficient to provide a well-defined VACF.
 When working with real data, ensure that the frames are captured frequently
