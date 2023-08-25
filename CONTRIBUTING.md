@@ -4,12 +4,12 @@ We welcome all contributions to Transport Analysis!
 
 Contributions can take many forms, such as:
 
-* sharing bug reports or feature requests through the [Issue Tracker](https://github.com/MDAnalysis/transport_analysis/issues)
+* sharing bug reports or feature requests through the [Issue Tracker](https://github.com/MDAnalysis/transport-analysis/issues)
 * asking or answering questions, or otherwise joining in on discussions
 * adding bug fixes, new features, or otherwise improving the code
 * adding or improving documentation
 
-The second two options both involve making a [pull request](https://github.com/MDAnalysis/transport_analysis/pulls) .
+The second two options both involve making a [pull request](https://github.com/MDAnalysis/transport-analysis/pulls) .
 
 There are many existing guides on how to make a contribution to an open
 source project on GitHub. In short, the steps are to:

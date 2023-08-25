@@ -2,8 +2,12 @@
 Viscosity --- :mod:`transport_analysis.analysis.viscosity`
 ==========================================================
 
-This module offers a class for the lightweight computation of
-viscosity via the Einstein-Helfand method.
+This module offers a class for the lightweight computation of shear
+viscosity via the Einstein-Helfand method. It outputs the "viscosity
+function," the product of viscosity and time as a function of time, from
+which the slope is taken to calculate the shear viscosity. This is
+described in eq. 5 of E M Kirova and G E Norman 2015 J. Phys.: Conf.
+Ser. 653 012106.
 
 """
 from typing import TYPE_CHECKING
@@ -21,8 +25,8 @@ if TYPE_CHECKING:
 class ViscosityHelfand(AnalysisBase):
     """
     Class to calculate viscosity using the Einstein-Helfand approach.
-    Note that the slope of the viscosity function must be taken to obtain the
-    viscosity.
+    Note that the slope of the viscosity function, the product of viscosity
+    and time as a function of time, must be taken to obtain the viscosity.
 
     Parameters
     ----------

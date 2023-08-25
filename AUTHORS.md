@@ -5,7 +5,7 @@ and Orion Cohen in 2023.
 
 
 All contributing authors are listed in this file below.
-The repository history at https://github.com/MDAnalysis/transport_analysis
+The repository history at https://github.com/MDAnalysis/transport-analysis
 and the CHANGELOG show individual code contributions.
 
 ## Chronological list of authors
