@@ -14,4 +14,4 @@ __git_revision__ = versions["full-revisionid"]
 del get_versions, versions
 
 from . import _version
-__version__ = _version.get_versions()['version']
+__version__ = _version.get_versions()["version"]
