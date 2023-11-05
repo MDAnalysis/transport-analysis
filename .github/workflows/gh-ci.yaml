@@ -35,6 +35,8 @@ jobs:
 
       - id: get-compatible-python
         uses: MDAnalysis/mdanalysis-compatible-python@main
+        with:
+          release: "latest"
 
   main-tests:
     if: "github.repository == 'MDAnalysis/transport-analysis'"
@@ -48,7 +50,7 @@ jobs:
           mdanalysis-version: ["latest", "develop"]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Build information
       run: |
@@ -118,7 +120,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -144,7 +146,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: psf/black@stable
       with:
         options: "--check --diff --line-length 79"
@@ -158,7 +160,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Python ${{ needs.environment-config.outputs.stable-python-version }}
       uses: actions/setup-python@v4
