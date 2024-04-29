@@ -23,31 +23,21 @@ defaults:
     shell: bash  -l {0} 
 
 jobs:
-  environment-config:
-    runs-on: ubuntu-latest
-    outputs:
-      stable-python-version: ${{ steps.get-compatible-python.outputs.stable-python }}
-      python-matrix: ${{ steps.get-compatible-python.outputs.python-versions }}
-    steps:
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-
-      - id: get-compatible-python
-        uses: MDAnalysis/mdanalysis-compatible-python@main
-        with:
-          release: "latest"
-
   main-tests:
     if: "github.repository == 'MDAnalysis/transport-analysis'"
-    needs: environment-config
     runs-on: ${{ matrix.os }}
     strategy:
         fail-fast: false
         matrix:
           os: [macOS-latest, ubuntu-latest, windows-latest]
-          python-version: ${{ fromJSON(needs.environment-config.outputs.python-matrix) }}
+          python-version: ["3.10", "3.11", "3.12"]
           mdanalysis-version: ["latest", "develop"]
+          # Manually exclude any combinations of the test matrix that can't be run 
+          exclude:
+            # The latest release of MDAnalysis only supports up to Python 3.11
+            # so we exclude 3.12 from the test matrix (issue #37)
+            - python-version: "3.12"
+              mdanalysis-version: "latest"
 
     steps:
     - uses: actions/checkout@v4
@@ -58,10 +48,9 @@ jobs:
         df -h
         ulimit -a
 
-
     # More info on options: https://github.com/conda-incubator/setup-miniconda
     - name: Install conda dependencies
-      uses: conda-incubator/setup-miniconda@v2
+      uses: conda-incubator/setup-miniconda@v3
       with:
         python-version: ${{ matrix.python-version }}
         environment-file: devtools/conda-envs/test_env.yaml
@@ -76,7 +65,6 @@ jobs:
         auto-update-conda: true
         auto-activate-base: false
         show-channel-urls: true
-
 
     - name: Install MDAnalysis version
       uses: MDAnalysis/install-mdanalysis@main
@@ -100,23 +88,22 @@ jobs:
         conda info
         conda list
 
-
     - name: Run tests
       run: |
-        pytest -n 2 -v --cov=transport_analysis --cov-report=xml --color=yes transport_analysis/tests/
+        pytest -n auto -v --cov=transport_analysis --cov-report=xml --color=yes transport_analysis/tests/
 
     - name: codecov
       if: github.repository == 'MDAnalysis/transport-analysis' && github.event_name != 'schedule'
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         file: coverage.xml
         name: codecov-${{ matrix.os }}-py${{ matrix.python-version }}
         verbose: True
+        token: ${{ secrets.CODECOV_TOKEN }}
 
 
   pylint_check:
     if: "github.repository == 'MDAnalysis/transport-analysis'"
-    needs: environment-config
     runs-on: ubuntu-latest
 
     steps:
@@ -125,7 +112,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: ${{ needs.environment-config.outputs.stable-python-version }}
+        python-version: "3.11"
 
     - name: Install Pylint
       run: |
@@ -142,7 +129,6 @@ jobs:
 
   black_check:
     if: "github.repository == 'MDAnalysis/transport-analysis'"
-    needs: environment-config
     runs-on: ubuntu-latest
 
     steps:
@@ -156,16 +142,15 @@ jobs:
 
   pypi_check:
     if: "github.repository == 'MDAnalysis/transport-analysis'"
-    needs: environment-config
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python ${{ needs.environment-config.outputs.stable-python-version }}
+    - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: ${{ needs.environment-config.outputs.stable-python-version }}
+        python-version: "3.11"
 
     - name: Install dependencies
       run: |
