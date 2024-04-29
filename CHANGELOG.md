@@ -33,6 +33,8 @@ xhgchen, hmacdope, orionarcher, IAlibay
 
 ### Changed
 <!-- Changes in existing functionality -->
+  * Minimum Python version has been increased to 3.10 (PR #50)
+  * Minimum MDAnalysis version has been increased to 2.1.0 (PR #50)
 
 ### Deprecated
 <!-- Soon-to-be removed features -->
