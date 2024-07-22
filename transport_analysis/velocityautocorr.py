@@ -353,8 +353,8 @@ class VelocityAutocorr(AnalysisBase):
 
         return (
             integrate.simpson(
-                self.results.timeseries[start:stop:step],
-                self.times[start:stop:step],
+                y=self.results.timeseries[start:stop:step],
+                x=self.times[start:stop:step],
             )
             / self.dim_fac
         )
