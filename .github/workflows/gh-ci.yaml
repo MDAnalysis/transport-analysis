@@ -55,7 +55,6 @@ jobs:
         python-version: ${{ matrix.python-version }}
         environment-file: devtools/conda-envs/test_env.yaml
         add-pip-as-python-dependency: true
-        architecture: x64
 
         miniforge-variant: Mambaforge
         use-mamba: true
