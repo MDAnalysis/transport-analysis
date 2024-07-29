@@ -371,7 +371,7 @@ class TestAllDims:
         sd_actual = v_simple.self_diffusivity_gk()
         sd_expected = (
             integrate.simpson(
-                characteristic_poly(NSTEP, tdim_factor), range(NSTEP)
+                y=characteristic_poly(NSTEP, tdim_factor), x=range(NSTEP)
             )
             / tdim_factor
         )
@@ -398,8 +398,8 @@ class TestAllDims:
         )
         sd_expected = (
             integrate.simpson(
-                characteristic_poly(NSTEP, tdim_factor)[tstart:tstop:tstep],
-                range(NSTEP)[tstart:tstop:tstep],
+                y=characteristic_poly(NSTEP, tdim_factor)[tstart:tstop:tstep],
+                x=range(NSTEP)[tstart:tstop:tstep],
             )
             / tdim_factor
         )
@@ -494,7 +494,7 @@ class TestAllDims:
         sd_actual = v_fft.self_diffusivity_gk()
         sd_expected = (
             integrate.simpson(
-                characteristic_poly(NSTEP, tdim_factor), range(NSTEP)
+                y=characteristic_poly(NSTEP, tdim_factor), x=range(NSTEP)
             )
             / tdim_factor
         )
@@ -521,8 +521,8 @@ class TestAllDims:
         )
         sd_expected = (
             integrate.simpson(
-                characteristic_poly(NSTEP, tdim_factor)[tstart:tstop:tstep],
-                range(NSTEP)[tstart:tstop:tstep],
+                y=characteristic_poly(NSTEP, tdim_factor)[tstart:tstop:tstep],
+                x=range(NSTEP)[tstart:tstop:tstep],
             )
             / tdim_factor
         )
@@ -539,7 +539,7 @@ class TestAllDims:
         sd_actual = v_fft.self_diffusivity_gk_odd()
         sd_expected = (
             integrate.trapezoid(
-                characteristic_poly(NSTEP, tdim_factor), range(NSTEP)
+                y=characteristic_poly(NSTEP, tdim_factor), x=range(NSTEP)
             )
             / tdim_factor
         )
@@ -566,8 +566,8 @@ class TestAllDims:
         )
         sd_expected = (
             integrate.trapezoid(
-                characteristic_poly(NSTEP, tdim_factor)[tstart:tstop:tstep],
-                range(NSTEP)[tstart:tstop:tstep],
+                y=characteristic_poly(NSTEP, tdim_factor)[tstart:tstop:tstep],
+                x=range(NSTEP)[tstart:tstop:tstep],
             )
             / tdim_factor
         )
