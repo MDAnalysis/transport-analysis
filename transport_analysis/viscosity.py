@@ -38,6 +38,10 @@ class ViscosityHelfand(AnalysisBase):
     dim_type : {'xyz', 'xy', 'yz', 'xz', 'x', 'y', 'z'}
         Desired dimensions to be included in the viscosity calculation.
         Defaults to 'xyz'.
+    linear_fit_window : tuple of int (optional)
+        A tuple of two integers specifying the start and end lag-time for
+        the linear fit of the viscosity function. If not provided, the
+        linear fit is not performed and viscosity is not calculated.
 
     Attributes
     ----------
@@ -230,6 +234,8 @@ class ViscosityHelfand(AnalysisBase):
     def plot_viscosity_function(self):
         """
         Plot the viscosity function as a function of lag-time.
+
+        If a linear fit window is provided, the window is highlighted.
         """
         import matplotlib.pyplot as plt
 
