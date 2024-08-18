@@ -10,6 +10,7 @@ described in eq. 5 of E M Kirova and G E Norman 2015 J. Phys.: Conf.
 Ser. 653 012106.
 
 """
+
 from typing import TYPE_CHECKING
 
 from MDAnalysis.analysis.base import AnalysisBase
@@ -28,6 +29,11 @@ class ViscosityHelfand(AnalysisBase):
     Note that the slope of the viscosity function, the product of viscosity
     and time as a function of time, must be taken to obtain the viscosity.
 
+    Particle velocities are required to calculate the viscosity function. Thus
+    you are limited to MDA trajectories that contain velocity information, e.g.
+    GROMACS .trr files, H5MD files, etc. See the MDAnalysis documentation:
+    https://docs.mdanalysis.org/stable/documentation_pages/coordinates/init.html#writers.
+
     Parameters
     ----------
     atomgroup : AtomGroup
@@ -38,6 +44,10 @@ class ViscosityHelfand(AnalysisBase):
     dim_type : {'xyz', 'xy', 'yz', 'xz', 'x', 'y', 'z'}
         Desired dimensions to be included in the viscosity calculation.
         Defaults to 'xyz'.
+    linear_fit_window : tuple of int (optional)
+        A tuple of two integers specifying the start and end lag-time for
+        the linear fit of the viscosity function. If not provided, the
+        linear fit is not performed and viscosity is not calculated.
 
     Attributes
     ----------
@@ -51,6 +61,10 @@ class ViscosityHelfand(AnalysisBase):
     results.visc_by_particle : :class:`numpy.ndarray`
         The viscosity function of each individual particle with respect to
         lag-time.
+    results.viscosity : float
+        The viscosity coefficient of the solvent. The argument
+        `linear_fit_window` must be provided to calculate this to
+        avoid misinterpretation of the viscosity function.
     start : Optional[int]
         The first frame of the trajectory used to compute the analysis.
     stop : Optional[int]
@@ -68,6 +82,7 @@ class ViscosityHelfand(AnalysisBase):
         atomgroup: "AtomGroup",
         temp_avg: float = 300.0,
         dim_type: str = "xyz",
+        linear_fit_window: tuple[int, int] = None,
         **kwargs,
     ) -> None:
         # the below line must be kept to initialize the AnalysisBase class!
@@ -86,6 +101,7 @@ class ViscosityHelfand(AnalysisBase):
         # args
         self.temp_avg = temp_avg
         self.dim_type = dim_type.lower()
+        self.linear_fit_window = linear_fit_window
         self._dim, self.dim_fac = self._parse_dim_type(self.dim_type)
 
         # local
@@ -203,7 +219,7 @@ class ViscosityHelfand(AnalysisBase):
             )
 
             # square and sum each x(, y, z) diff per particle
-            sq_diff = np.square(diff).sum(axis=-1)
+            sq_diff = np.square(diff).mean(axis=-1)
 
             # average over # frames
             # update viscosity by particle array
@@ -215,3 +231,42 @@ class ViscosityHelfand(AnalysisBase):
         )
         # average over # particles and update results array
         self.results.timeseries = self.results.visc_by_particle.mean(axis=1)
+
+        if self.linear_fit_window is not None:
+            fit_start, fit_end = (
+                self.linear_fit_window[0],
+                self.linear_fit_window[1],
+            )
+            linear_fit = np.polyfit(
+                lagtimes[fit_start:fit_end],
+                self.results.timeseries[fit_start:fit_end],
+                1,
+            )
+            self.results.viscosity = linear_fit[0]
+
+    def plot_viscosity_function(self):
+        """
+        Plot the viscosity function as a function of lag-time.
+
+        If a linear fit window is provided, the window is highlighted.
+        """
+        import matplotlib.pyplot as plt
+
+        lagtimes = np.arange(0, self.n_frames)
+        plt.plot(lagtimes, self.results.timeseries, label="Viscosity Function")
+
+        if self.linear_fit_window is not None:
+            fit_start, fit_end = (
+                self.linear_fit_window[0],
+                self.linear_fit_window[1],
+            )
+            plt.axvline(
+                fit_start, color="red", linestyle="--", label="Fit Start"
+            )
+            plt.axvline(fit_end, color="blue", linestyle="--", label="Fit End")
+
+        plt.xlabel("Lag-time")
+        plt.ylabel("Viscosity Function")
+        plt.title("Viscosity Function vs Lag-time")
+        plt.legend()
+        plt.show()

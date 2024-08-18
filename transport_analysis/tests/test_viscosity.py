@@ -12,10 +12,17 @@ import numpy as np
 from MDAnalysis.exceptions import NoDataError
 from MDAnalysisTests.datafiles import PRM_NCBOX, TRJ_NCBOX, PSF, DCD
 
+from transport_analysis.data.files import ec_traj_trr, ec_top
+
 
 @pytest.fixture(scope="module")
 def u():
     return mda.Universe(PRM_NCBOX, TRJ_NCBOX)
+
+
+@pytest.fixture()
+def u_ec():
+    return mda.Universe(ec_top, ec_traj_trr)
 
 
 @pytest.fixture(scope="module")
@@ -118,7 +125,7 @@ def characteristic_poly_helfand(
             - velocities[lag:, :, :] * positions[lag:, :, :]
         )
 
-        sq_diff = np.square(diff).sum(axis=-1)
+        sq_diff = np.square(diff).mean(axis=-1)
         result[lag] = np.mean(sq_diff, axis=0)
 
     result = result / (2 * boltzmann * vol_avg * temp_avg)
@@ -146,6 +153,15 @@ class TestViscosityHelfand:
         errmsg = f"invalid dim_type: {dimtype}"
         with pytest.raises(ValueError, match=errmsg):
             VH(ag, dim_type=dimtype)
+
+    def test_ec_universe(self, u_ec):
+        vh = VH(u_ec.atoms, linear_fit_window=(10, 40))
+        vh.run()
+        # vh.plot_viscosity_function()
+        # the actual value is 2.56, not expected to be exact
+        assert np.allclose(0.0256, vh.results.viscosity, atol=0.005)
+
+        assert vh.results.timeseries is not None
 
 
 @pytest.mark.parametrize(
