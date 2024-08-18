@@ -124,7 +124,7 @@ def characteristic_poly_helfand(
             - velocities[lag:, :, :] * positions[lag:, :, :]
         )
 
-        sq_diff = np.square(diff).sum(axis=-1)
+        sq_diff = np.square(diff).mean(axis=-1)
         result[lag] = np.mean(sq_diff, axis=0)
 
     result = result / (2 * boltzmann * vol_avg * temp_avg)
