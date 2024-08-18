@@ -14,6 +14,7 @@ from MDAnalysisTests.datafiles import PRM_NCBOX, TRJ_NCBOX, PSF, DCD
 
 from transport_analysis.data.files import ec_traj_trr, ec_top
 
+
 @pytest.fixture(scope="module")
 def u():
     return mda.Universe(PRM_NCBOX, TRJ_NCBOX)
@@ -176,9 +177,7 @@ class TestViscosityHelfand:
     ],
 )
 class TestAllDims:
-    def test_step_vtraj_all_dims(
-        self, step_vtraj_full, NSTEP, tdim, tdim_factor
-    ):
+    def test_step_vtraj_all_dims(self, step_vtraj_full, NSTEP, tdim, tdim_factor):
         # Helfand viscosity results should agree with the unit velocity traj
         # defined in characteristic_poly_helfand()
         vis_h = VH(step_vtraj_full.atoms, dim_type=tdim)
