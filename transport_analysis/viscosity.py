@@ -61,6 +61,10 @@ class ViscosityHelfand(AnalysisBase):
     results.visc_by_particle : :class:`numpy.ndarray`
         The viscosity function of each individual particle with respect to
         lag-time.
+    results.viscosity : float
+        The viscosity coefficient of the solvent. The argument
+        `linear_fit_window` must be provided to calculate this to
+        avoid misinterpretation of the viscosity function.
     start : Optional[int]
         The first frame of the trajectory used to compute the analysis.
     stop : Optional[int]
