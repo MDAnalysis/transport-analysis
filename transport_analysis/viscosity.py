@@ -110,7 +110,9 @@ class ViscosityHelfand(AnalysisBase):
         before the analysis loop begins
         """
         # 2D viscosity array of frames x particles
-        self.results.visc_by_particle = np.zeros((self.n_frames, self.n_particles))
+        self.results.visc_by_particle = np.zeros(
+            (self.n_frames, self.n_particles)
+        )
 
         self._volumes = np.zeros((self.n_frames))
 
@@ -119,9 +121,13 @@ class ViscosityHelfand(AnalysisBase):
 
         # 3D arrays of frames x particles x dimensionality
         # for velocities and positions
-        self._velocities = np.zeros((self.n_frames, self.n_particles, self.dim_fac))
+        self._velocities = np.zeros(
+            (self.n_frames, self.n_particles, self.dim_fac)
+        )
 
-        self._positions = np.zeros((self.n_frames, self.n_particles, self.dim_fac))
+        self._positions = np.zeros(
+            (self.n_frames, self.n_particles, self.dim_fac)
+        )
         # self.results.timeseries not set here
 
         # update when mda 2.6.0 releases with typo fix
@@ -166,7 +172,9 @@ class ViscosityHelfand(AnalysisBase):
 
         # trajectory must have velocity and position information
         if not (
-            self._ts.has_velocities and self._ts.has_positions and self._ts.volume != 0
+            self._ts.has_velocities
+            and self._ts.has_positions
+            and self._ts.volume != 0
         ):
             raise NoDataError(
                 "Helfand viscosity computation requires "
@@ -177,10 +185,14 @@ class ViscosityHelfand(AnalysisBase):
         self._volumes[self._frame_index] = self._ts.volume
 
         # set shape of velocity array
-        self._velocities[self._frame_index] = self.atomgroup.velocities[:, self._dim]
+        self._velocities[self._frame_index] = self.atomgroup.velocities[
+            :, self._dim
+        ]
 
         # set shape of position array
-        self._positions[self._frame_index] = self.atomgroup.positions[:, self._dim]
+        self._positions[self._frame_index] = self.atomgroup.positions[
+            :, self._dim
+        ]
 
     def _conclude(self):
         """
@@ -217,7 +229,10 @@ class ViscosityHelfand(AnalysisBase):
         self.results.timeseries = self.results.visc_by_particle.mean(axis=1)
 
         if self.linear_fit_window is not None:
-            fit_start, fit_end = self.linear_fit_window[0], self.linear_fit_window[1]
+            fit_start, fit_end = (
+                self.linear_fit_window[0],
+                self.linear_fit_window[1],
+            )
             linear_fit = np.polyfit(
                 lagtimes[fit_start:fit_end],
                 self.results.timeseries[fit_start:fit_end],
@@ -237,8 +252,13 @@ class ViscosityHelfand(AnalysisBase):
         plt.plot(lagtimes, self.results.timeseries, label="Viscosity Function")
 
         if self.linear_fit_window is not None:
-            fit_start, fit_end = self.linear_fit_window[0], self.linear_fit_window[1]
-            plt.axvline(fit_start, color="red", linestyle="--", label="Fit Start")
+            fit_start, fit_end = (
+                self.linear_fit_window[0],
+                self.linear_fit_window[1],
+            )
+            plt.axvline(
+                fit_start, color="red", linestyle="--", label="Fit Start"
+            )
             plt.axvline(fit_end, color="blue", linestyle="--", label="Fit End")
 
         plt.xlabel("Lag-time")
