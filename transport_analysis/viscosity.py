@@ -28,6 +28,11 @@ class ViscosityHelfand(AnalysisBase):
     Note that the slope of the viscosity function, the product of viscosity
     and time as a function of time, must be taken to obtain the viscosity.
 
+    Particle velocities are required to calculate the viscosity function. Thus
+    you are limited to MDA trajectories that contain velocity information, e.g.
+    GROMACS .trr files, H5MD files, etc. See the MDAnalysis documentation:
+    https://docs.mdanalysis.org/stable/documentation_pages/coordinates/init.html#writers.
+
     Parameters
     ----------
     atomgroup : AtomGroup
