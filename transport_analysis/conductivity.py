@@ -7,13 +7,13 @@ from MDAnalysis.units import constants
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
-from transport_analysis.utils import msd_fft_1d, msd_variance_1d, average_directions
+from transport_analysis.utils import msd_fft_cross_1d, msd_variance_cross_1d, average_directions
 
 if TYPE_CHECKING:
     from MDAnalysis.core.universe import AtomGroup
 
 ## Need to pass the entire the universe to get the com of the universe not just the atomg
-class DiffusionCoefficientEinstein(AnalysisBase):
+class ConductivityEinstein(AnalysisBase):
 	"""
 	Class to calculate the diffusion_coefficient of a species.
 	Note that the slope of the mean square displacement provides
@@ -71,11 +71,16 @@ class DiffusionCoefficientEinstein(AnalysisBase):
     """
 	def __init__(self,
         allatomgroup: "AtomGroup",
-		atomgroup_query: str,
+		cationgroup_query: str,
+		aniongroup_query: str,
         temp_avg: float = 298.0,
         linear_fit_window: tuple[int, int] = None,
-		num_atoms_per_species = int, 
-		mass_per_species = float,
+		cation_num_atoms_per_species = int,
+		anion_num_atoms_per_species = int, 
+		cation_mass_per_species = float,
+		anion_mass_per_species = float,
+		cation_charge = int,
+		anion_charge = int,
         **kwargs,
     ) -> None:
         # the below line must be kept to initialize the AnalysisBase class!
@@ -93,14 +98,20 @@ class DiffusionCoefficientEinstein(AnalysisBase):
 		self.linear_fit_window = linear_fit_window
 
 		self.allatomgroup = allatomgroup
-		self.atomgroup = self.allatomgroup.select_atoms(atomgroup_query)
-		self.n_particles = len(self.atomgroup)
-		self.num_atoms_per_species = num_atoms_per_species
-		self.mass_per_species = mass_per_species
+		self.cations = self.allatomgroup.select_atoms(cationgroup_query)
+		self.anions = self.allatomgroup.select_atoms(aniongroup_query)
+		self.cation_num_atoms_per_species = cation_num_atoms_per_species
+		self.anion_num_atoms_per_species = anion_num_atoms_per_species
+		self.cation_mass_per_species = cation_mass_per_species
+		self.anion_mass_per_species = anion_mass_per_species
+		self.cation_charge = cation_charge
+		self.anion_charge = anion_charge
 
 		self._dim = 3
+		self.cation_particles = len(self.cations)
+		self.anion_particles = len(self.anions)
 
-		if self.n_particles%self.num_atoms_per_species != 0:
+		if (self.cation_particles%self.cation_num_atoms_per_species != 0) or (self.anion_particles%self.anion_num_atoms_per_species != 0):
 			raise TypeError(
 				"Some species are fragmented. Invalid AtomGroup"
 			)
@@ -113,27 +124,52 @@ class DiffusionCoefficientEinstein(AnalysisBase):
         # 2D viscosity array of frames x particles
 
 		self._volumes = np.zeros((self.n_frames))
-		self._msds = np.zeros((self.n_frames,self._dim))
-		self._msds_var = np.zeros((self.n_frames,self._dim))
-		self._lii_self = np.zeros((self.n_frames))
+
+		self._msds_cation_cation = np.zeros((self.n_frames,self._dim))
+		self._msds_cation_anion =  np.zeros((self.n_frames,self._dim))
+		self._msds_anion_anion = np.zeros((self.n_frames,self._dim))
+
+		self._msds_cation_cation_var = np.zeros((self.n_frames,self._dim))
+		self._msds_cation_anion_var = np.zeros((self.n_frames,self._dim))
+		self._msds_anion_anion_var = np.zeros((self.n_frames,self._dim))
+		self._cond = np.zeros((self.n_frames))
+		self._cond_var = np.zeros((self.n_frames))
+		
+
+		self._lij_cation_cation = np.zeros((self.n_frames))
+		self._lij_cation_anion = np.zeros((self.n_frames))
+		self._lij_anion_anion = np.zeros((self.n_frames))
+
 		self.weights = np.ones((self.n_frames))
+
+
 		self._coms = np.zeros((self.n_frames, self._dim))
 		self._times = np.zeros((self.n_frames))
-
-		self._masses = self.atomgroup.masses
+        
+		self._cation_masses = self.cations.masses
+		self._anion_masses = self.anions.masses
 
         # 3D arrays of frames x particles x dimensions
         # positions
-		self._positions = np.zeros(
-            (self.n_frames, int(self.n_particles), self._dim)
+		self._cation_positions = np.zeros(
+            (self.n_frames, int(self.cation_particles), self._dim)
         )
-		self._mass_weighted_positions = np.zeros(
-            (self.n_frames, int(self.n_particles/self.num_atoms_per_species), self._dim)
+		self._anion_positions = np.zeros(
+            (self.n_frames, int(self.anion_particles), self._dim)
+        )
+
+		self._cation_mass_weighted_positions = np.zeros(
+            (self.n_frames, int(self.cation_particles/self.cation_num_atoms_per_species), self._dim)
+        )
+
+		self._anion_mass_weighted_positions = np.zeros(
+            (self.n_frames, int(self.anion_particles/self.anion_num_atoms_per_species), self._dim)
         )
 		self.J_to_KJ = 1000
 		self.boltzmann = self.J_to_KJ*constants["Boltzmann_constant"]/constants["N_Avogadro"]
 		self.A_to_m = 1e-10
 		self.fs_to_s = 1e-15
+		self.e_to_C = constants['elementary_charge']
 	
 	def _single_frame(self):
 		"""
@@ -159,10 +195,14 @@ class DiffusionCoefficientEinstein(AnalysisBase):
 		self._times[self._frame_index] = self._ts.time
 		# set shape of position array
 		
-		self._positions[self._frame_index] = self.atomgroup.positions 
+		self._cation_positions[self._frame_index] = self.cations.positions 
 		self._coms[self._frame_index] = self.allatomgroup.center_of_mass(wrap=False)
-		self._mass_weighted_positions[self._frame_index] = (np.multiply(np.repeat(self._masses,self._dim,axis = 0).reshape(-1,self._dim),self._positions[self._frame_index])/self.mass_per_species).reshape(-1, int(self.num_atoms_per_species), self._dim).sum(axis=1)
-		self._mass_weighted_positions[self._frame_index] = self._mass_weighted_positions[self._frame_index] - self._coms[self._frame_index] 
+		self._cation_mass_weighted_positions[self._frame_index] = (np.multiply(np.repeat(self._cation_masses,self._dim,axis = 0).reshape(-1,self._dim),self._cation_positions[self._frame_index])/self.cation_mass_per_species).reshape(-1, int(self.cation_num_atoms_per_species), self._dim).sum(axis=1)
+		self._anion_mass_weighted_positions[self._frame_index] = (np.multiply(np.repeat(self._anion_masses,self._dim,axis = 0).reshape(-1,self._dim),self._anion_positions[self._frame_index])/self.anion_mass_per_species).reshape(-1, int(self.anion_num_atoms_per_species), self._dim).sum(axis=1)
+		
+		self._cation_mass_weighted_positions[self._frame_index] = self._cation_mass_weighted_positions[self._frame_index] - self._coms[self._frame_index] 
+		self._anion_mass_weighted_positions[self._frame_index] = self._anion_mass_weighted_positions[self._frame_index] - self._coms[self._frame_index] 
+
 
 
 
@@ -170,38 +210,57 @@ class DiffusionCoefficientEinstein(AnalysisBase):
 		"""
 		Calculates the diffusion coefficient via the fft.
 		"""
-		for specie_id in (range(int(self.n_particles/self.num_atoms_per_species))):
-			for i in range(self._dim):
-				msd_temp = msd_fft_1d(np.array(self._mass_weighted_positions[:,specie_id, :][:,i]))
-				self._msds[:,i] += msd_temp
-				self._msds_var[:,i] += msd_variance_1d(np.array(self._mass_weighted_positions[:,specie_id, :][:,i]), self._msds[:,i])
-			
+		cation_summed_positions = np.sum(self._cation_mass_weighted_positions, axis=1)
+		anion_summed_positions = np.sum(self._anion_mass_weighted_positions, axis=1)
 
-		self._lii_self = average_directions(self._msds,self._dim)/(2*self.boltzmann*self.temp_avg*self._volumes)
-		self.weights = np.sqrt(np.abs(1/average_directions(self._msds_var,self._dim)))
+		self._msds_cation_cation = np.transpose(
+        	[msd_fft_cross_1d(cation_summed_positions[:, i], cation_summed_positions[:, i]) for i in range(self._dim)]
+    	)
+		self._msds_cation_cation_var = np.transpose(
+        	[msd_variance_cross_1d(cation_summed_positions[:, i], cation_summed_positions[:, i], self._msds_cation_cation[:, i]) for i in range(self._dim)]
+    	)
+
+		self._msds_anion_anion = np.transpose(
+        	[msd_fft_cross_1d(anion_summed_positions[:, i], anion_summed_positions[:, i]) for i in range(self._dim)]
+    	)
+		self._msds_anion_anion_var = np.transpose(
+        	[msd_variance_cross_1d(anion_summed_positions[:, i], anion_summed_positions[:, i], self._msds_anion_anion[:, i]) for i in range(self._dim)]
+    	)
+
+		self._msds_cation_anion = np.transpose(
+        	[msd_fft_cross_1d(cation_summed_positions[:, i], anion_summed_positions[:, i]) for i in range(self._dim)]
+    	)
+		self._msds_cation_anion_var = np.transpose(
+        	[msd_variance_cross_1d(cation_summed_positions[:, i], anion_summed_positions[:, i], self._msds_cation_anion[:, i]) for i in range(self._dim)]
+    	)	
+		self._lij_cation_cation = average_directions(self._msds_cation_cation,self._dim)/(2*self.boltzmann*self.temp_avg*self._volumes)
+		self._lij_cation_anion = average_directions(self._msds_cation_anion,self._dim)/(2*self.boltzmann*self.temp_avg*self._volumes)
+		self._lij_anion_anion = average_directions(self._msds_anion_anion,self._dim)/(2*self.boltzmann*self.temp_avg*self._volumes)
+
+		self._cond = (self.cation_charge**2)*self._lij_cation_cation + (self.anion_charge**2)*self._lij_anion_anion + (2*self.cation_charge*self.anion_charge)*self._lij_cation_anion
+		self._cond_var =  ((self.cation_charge**2)**2)*self._msds_cation_cation_var + ((self.anion_charge**2)**2)*self._msds_anion_anion_var + ((2*self.cation_charge*self.anion_charge)**2)*self._msds_cation_anion_var
+		self.weights = np.sqrt(np.abs(1/average_directions(self._cond_var,self._dim)))
 		self.weights /= np.sum(self.weights)
 
-		lii_self = None
-		lii_intercept = None
+		cond = None
+		cond_intercept = None
 		beta = None
 		if self.linear_fit_window:
-			lii_self , lii_intercept , _ , _, _ = stats.linregress(self._times[self.linear_fit_window[0]:self.linear_fit_window[1]], self._lii_self[self.linear_fit_window[0]:self.linear_fit_window[1]])
-			fit_slope = np.gradient(np.log(self._lii_self[self.linear_fit_window[0]:self.linear_fit_window[1]])[1:], np.log(self._times[self.linear_fit_window[0]:self.linear_fit_window[1]] - self._times[0])[1:])
+			cond , cond_intercept , _ , _, _ = stats.linregress(self._times[self.linear_fit_window[0]:self.linear_fit_window[1]], self._cond[self.linear_fit_window[0]:self.linear_fit_window[1]])
+			fit_slope = np.gradient(np.log(self._cond[self.linear_fit_window[0]:self.linear_fit_window[1]])[1:], np.log(self._times[self.linear_fit_window[0]:self.linear_fit_window[1]] - self._times[0])[1:])
 			beta = np.nanmean(np.array(fit_slope))
 
 		else:
-			lii_intercept , lii_self = np.polynomial.polynomial.polyfit(self._times[1:], self._lii_self[1:], 1, w=self.weights[1:])
-			fit_slope = np.gradient(np.log(self._lii_self)[1:], np.log(self._times - self._times[0])[1:])
+			cond_intercept , cond = np.polynomial.polynomial.polyfit(self._times[1:], self._cond[1:], 1, w=self.weights[1:])
+			fit_slope = np.gradient(np.log(self._cond)[1:], np.log(self._times - self._times[0])[1:])
 			beta = np.average(np.array(fit_slope), weights=self.weights[1:])
 
 		
-		conc = float(self.n_particles/self.num_atoms_per_species)/(self._volumes.mean()*(self.A_to_m**3))
-		
 		self.results.linearity = beta
-		self.results.fit_slope = lii_self
-		self.results.fit_intercept = lii_intercept
-		self.results.lii_self = lii_self*(1/(self.A_to_m*self.fs_to_s))
-		self.results.diffusion_coefficient = (lii_self*(1/(self.A_to_m*self.fs_to_s)))*(self.boltzmann*self.temp_avg/conc)		
+		self.results.fit_slope = cond
+		self.results.fit_intercept = cond_intercept
+		self.results.conductivity = (cond*(1/(self.A_to_m*self.fs_to_s)))*(self.e_to_C**2)*1000
+				
 
 	def plot_linear_fit(self):
 		"""
