@@ -195,8 +195,10 @@ class ConductivityEinstein(AnalysisBase):
 		self._times[self._frame_index] = self._ts.time
 		# set shape of position array
 		
-		self._cation_positions[self._frame_index] = self.cations.positions 
+		self._cation_positions[self._frame_index] = self.cations.positions
+		self._anion_positions[self._frame_index] = self.anions.positions
 		self._coms[self._frame_index] = self.allatomgroup.center_of_mass(wrap=False)
+
 		self._cation_mass_weighted_positions[self._frame_index] = (np.multiply(np.repeat(self._cation_masses,self._dim,axis = 0).reshape(-1,self._dim),self._cation_positions[self._frame_index])/self.cation_mass_per_species).reshape(-1, int(self.cation_num_atoms_per_species), self._dim).sum(axis=1)
 		self._anion_mass_weighted_positions[self._frame_index] = (np.multiply(np.repeat(self._anion_masses,self._dim,axis = 0).reshape(-1,self._dim),self._anion_positions[self._frame_index])/self.anion_mass_per_species).reshape(-1, int(self.anion_num_atoms_per_species), self._dim).sum(axis=1)
 		
@@ -208,7 +210,7 @@ class ConductivityEinstein(AnalysisBase):
 
 	def _conclude(self):
 		"""
-		Calculates the diffusion coefficient via the fft.
+		Calculates the conductivity coefficient via the fft.
 		"""
 		cation_summed_positions = np.sum(self._cation_mass_weighted_positions, axis=1)
 		anion_summed_positions = np.sum(self._anion_mass_weighted_positions, axis=1)
@@ -219,20 +221,18 @@ class ConductivityEinstein(AnalysisBase):
 		self._msds_cation_cation_var = np.transpose(
         	[msd_variance_cross_1d(cation_summed_positions[:, i], cation_summed_positions[:, i], self._msds_cation_cation[:, i]) for i in range(self._dim)]
     	)
-
 		self._msds_anion_anion = np.transpose(
         	[msd_fft_cross_1d(anion_summed_positions[:, i], anion_summed_positions[:, i]) for i in range(self._dim)]
     	)
 		self._msds_anion_anion_var = np.transpose(
         	[msd_variance_cross_1d(anion_summed_positions[:, i], anion_summed_positions[:, i], self._msds_anion_anion[:, i]) for i in range(self._dim)]
     	)
-
 		self._msds_cation_anion = np.transpose(
         	[msd_fft_cross_1d(cation_summed_positions[:, i], anion_summed_positions[:, i]) for i in range(self._dim)]
     	)
 		self._msds_cation_anion_var = np.transpose(
         	[msd_variance_cross_1d(cation_summed_positions[:, i], anion_summed_positions[:, i], self._msds_cation_anion[:, i]) for i in range(self._dim)]
-    	)	
+    	)
 		self._lij_cation_cation = average_directions(self._msds_cation_cation,self._dim)/(2*self.boltzmann*self.temp_avg*self._volumes)
 		self._lij_cation_anion = average_directions(self._msds_cation_anion,self._dim)/(2*self.boltzmann*self.temp_avg*self._volumes)
 		self._lij_anion_anion = average_directions(self._msds_anion_anion,self._dim)/(2*self.boltzmann*self.temp_avg*self._volumes)
@@ -254,12 +254,11 @@ class ConductivityEinstein(AnalysisBase):
 			cond_intercept , cond = np.polynomial.polynomial.polyfit(self._times[1:], self._cond[1:], 1, w=self.weights[1:])
 			fit_slope = np.gradient(np.log(self._cond)[1:], np.log(self._times - self._times[0])[1:])
 			beta = np.average(np.array(fit_slope), weights=self.weights[1:])
-
 		
 		self.results.linearity = beta
 		self.results.fit_slope = cond
 		self.results.fit_intercept = cond_intercept
-		self.results.conductivity = (cond*(1/(self.A_to_m*self.fs_to_s)))*(self.e_to_C**2)*1000
+		self.results.conductivity = cond*(self.e_to_C*self.e_to_C)*(1/(self.fs_to_s*self.A_to_m))*10
 				
 
 	def plot_linear_fit(self):
