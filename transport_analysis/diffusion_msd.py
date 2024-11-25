@@ -191,15 +191,16 @@ class DiffusionCoefficientEinstein(AnalysisBase):
 
 		else:
 			lii_intercept , lii_self = np.polynomial.polynomial.polyfit(self._times[1:], self._lii_self[1:], 1, w=self.weights[1:])
-			fit_slope = np.gradient(np.log(self._lii_self)[1:], np.log(self._times - self._times[0])[1:])
-			beta = np.average(np.array(fit_slope), weights=self.weights[1:])
+			#fit_slope = np.gradient(np.log(self._lii_self)[1:], np.log(self._times - self._times[0])[1:])
+			#beta = np.average(np.array(fit_slope), weights=self.weights[1:])
 
 		
 		conc = float(self.n_particles/self.num_atoms_per_species)/(self._volumes.mean()*(self.A_to_m**3))
 		
-		self.results.linearity = beta
-		self.results.fit_slope = lii_self
-		self.results.fit_intercept = lii_intercept
+		if self.linear_fit_window:
+			self.results.linearity = beta
+		#self.results.fit_slope = lii_self
+		#self.results.fit_intercept = lii_intercept
 		self.results.lii_self = lii_self*(1/(self.A_to_m*self.fs_to_s))
 		self.results.diffusion_coefficient = (lii_self*(1/(self.A_to_m*self.fs_to_s)))*(self.boltzmann*self.temp_avg/conc)		
 
