@@ -93,9 +93,7 @@ def characteristic_poly(last, n_dim, first=0, step=1):
     return result
 
 
-@pytest.mark.parametrize(
-    "tdim, tdim_keys", [(1, [0]), (2, [0, 1]), (3, [0, 1, 2])]
-)
+@pytest.mark.parametrize("tdim, tdim_keys", [(1, [0]), (2, [0, 1]), (3, [0, 1, 2])])
 def test_characteristic_poly(step_vtraj, NSTEP, tdim, tdim_keys):
     # test `characteristic_poly()` against `tidynamics.acf()``
 
@@ -262,9 +260,7 @@ class TestVelocityAutocorr:
         assert x_act == x_exp
         assert y_act == y_exp
 
-    def test_plot_running_integral_start_stop_step(
-        self, vacf, start=1, stop=9, step=2
-    ):
+    def test_plot_running_integral_start_stop_step(self, vacf, start=1, stop=9, step=2):
         t_range = range(start, stop, step)
         # Expected data to be plotted
         x_exp = vacf.times[start:stop:step]
@@ -328,9 +324,7 @@ class TestVACFFFT(object):
     ],
 )
 class TestAllDims:
-    def test_simple_step_vtraj_all_dims(
-        self, step_vtraj, NSTEP, tdim, tdim_factor
-    ):
+    def test_simple_step_vtraj_all_dims(self, step_vtraj, NSTEP, tdim, tdim_factor):
         # testing the "simple" windowed algorithm on unit velocity trajectory
         # VACF results should fit the polynomial defined in
         # characteristic_poly()
@@ -353,9 +347,7 @@ class TestAllDims:
         # test start stop step is working correctly
         v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=False)
         v_simple.run(start=tstart, stop=tstop, step=tstep)
-        poly = characteristic_poly(
-            tstop, tdim_factor, first=tstart, step=tstep
-        )
+        poly = characteristic_poly(tstop, tdim_factor, first=tstart, step=tstep)
         # polynomial must take offset start into account
         assert_almost_equal(v_simple.results.timeseries, poly, decimal=4)
 
@@ -370,9 +362,7 @@ class TestAllDims:
         v_simple.run()
         sd_actual = v_simple.self_diffusivity_gk()
         sd_expected = (
-            integrate.simpson(
-                y=characteristic_poly(NSTEP, tdim_factor), x=range(NSTEP)
-            )
+            integrate.simpson(y=characteristic_poly(NSTEP, tdim_factor), x=range(NSTEP))
             / tdim_factor
         )
         # 24307638750.0 (act) agrees with 24307638888.888885 (exp) to 8 sig figs
@@ -393,9 +383,7 @@ class TestAllDims:
         # check that start, stop, step is working correctly
         v_simple = VACF(step_vtraj.atoms, dim_type=tdim, fft=False)
         v_simple.run()
-        sd_actual = v_simple.self_diffusivity_gk(
-            start=tstart, stop=tstop, step=tstep
-        )
+        sd_actual = v_simple.self_diffusivity_gk(start=tstart, stop=tstop, step=tstep)
         sd_expected = (
             integrate.simpson(
                 y=characteristic_poly(NSTEP, tdim_factor)[tstart:tstop:tstep],
@@ -415,9 +403,7 @@ class TestAllDims:
         v_simple.run()
         sd_actual = v_simple.self_diffusivity_gk_odd()
         sd_expected = (
-            integrate.trapezoid(
-                characteristic_poly(NSTEP, tdim_factor), range(NSTEP)
-            )
+            integrate.trapezoid(characteristic_poly(NSTEP, tdim_factor), range(NSTEP))
             / tdim_factor
         )
         # 24307638750.0 (exp) agrees with 24307638888.888885 (act) to 8 sig figs
@@ -451,9 +437,7 @@ class TestAllDims:
         # 7705160166.66 (exp) agrees with 7705162888.88 (act) to 6 sig figs
         assert_approx_equal(sd_actual, sd_expected, significant=6)
 
-    def test_fft_step_vtraj_all_dims(
-        self, step_vtraj, NSTEP, tdim, tdim_factor
-    ):
+    def test_fft_step_vtraj_all_dims(self, step_vtraj, NSTEP, tdim, tdim_factor):
         # testing the fft algorithm on unit velocity trajectory
         # defined in step_vtraj()
         # VACF results should fit the characteristic polynomial defined in
@@ -476,9 +460,7 @@ class TestAllDims:
         # test start stop step is working correctly
         v_fft = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
         v_fft.run(start=tstart, stop=tstop, step=tstep)
-        poly = characteristic_poly(
-            tstop, tdim_factor, first=tstart, step=tstep
-        )
+        poly = characteristic_poly(tstop, tdim_factor, first=tstart, step=tstep)
         # polynomial must take offset start into account
         assert_almost_equal(v_fft.results.timeseries, poly, decimal=3)
 
@@ -493,9 +475,7 @@ class TestAllDims:
         v_fft.run()
         sd_actual = v_fft.self_diffusivity_gk()
         sd_expected = (
-            integrate.simpson(
-                y=characteristic_poly(NSTEP, tdim_factor), x=range(NSTEP)
-            )
+            integrate.simpson(y=characteristic_poly(NSTEP, tdim_factor), x=range(NSTEP))
             / tdim_factor
         )
         # 24307638750.0 (act) agrees with 24307638888.888885 (exp) to 8 sig figs
@@ -516,9 +496,7 @@ class TestAllDims:
         # check that start, stop, step is working correctly
         v_fft = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
         v_fft.run()
-        sd_actual = v_fft.self_diffusivity_gk(
-            start=tstart, stop=tstop, step=tstep
-        )
+        sd_actual = v_fft.self_diffusivity_gk(start=tstart, stop=tstop, step=tstep)
         sd_expected = (
             integrate.simpson(
                 y=characteristic_poly(NSTEP, tdim_factor)[tstart:tstop:tstep],
@@ -561,9 +539,7 @@ class TestAllDims:
         # check that start, stop, step is working correctly
         v_fft = VACF(step_vtraj.atoms, dim_type=tdim, fft=True)
         v_fft.run()
-        sd_actual = v_fft.self_diffusivity_gk_odd(
-            start=tstart, stop=tstop, step=tstep
-        )
+        sd_actual = v_fft.self_diffusivity_gk_odd(start=tstart, stop=tstop, step=tstep)
         sd_expected = (
             integrate.trapezoid(
                 y=characteristic_poly(NSTEP, tdim_factor)[tstart:tstop:tstep],

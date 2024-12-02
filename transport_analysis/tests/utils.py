@@ -50,9 +50,7 @@ def make_Universe(
         n_residues=n_residues,
         n_segments=n_segments,
         atom_resindex=np.repeat(np.arange(n_residues), n_atoms // n_residues),
-        residue_segindex=np.repeat(
-            np.arange(n_segments), n_residues // n_segments
-        ),
+        residue_segindex=np.repeat(np.arange(n_segments), n_residues // n_segments),
         # trajectory things
         trajectory=trajectory,
         velocities=velocities,

@@ -47,6 +47,7 @@ When working with real data, ensure that the frames are captured frequently
 enough to obtain a VACF suitable for your needs.
 
 """
+
 from typing import TYPE_CHECKING
 
 from MDAnalysis.analysis.base import AnalysisBase
@@ -125,9 +126,7 @@ class VelocityAutocorr(AnalysisBase):
         # https://docs.mdanalysis.org/stable/documentation_pages/analysis/base.html?highlight=results#MDAnalysis.analysis.base.Results
 
         if isinstance(atomgroup, UpdatingAtomGroup):
-            raise TypeError(
-                "UpdatingAtomGroups are not valid for VACF computation"
-            )
+            raise TypeError("UpdatingAtomGroups are not valid for VACF computation")
 
         # args
         self.dim_type = dim_type.lower()
@@ -142,14 +141,10 @@ class VelocityAutocorr(AnalysisBase):
     def _prepare(self):
         """Set up velocity and VACF arrays before the analysis loop begins"""
         # 2D array of frames x particles
-        self.results.vacf_by_particle = np.zeros(
-            (self.n_frames, self.n_particles)
-        )
+        self.results.vacf_by_particle = np.zeros((self.n_frames, self.n_particles))
 
         # 3D array of frames x particles x dimensionality
-        self._velocities = np.zeros(
-            (self.n_frames, self.n_particles, self.dim_fac)
-        )
+        self._velocities = np.zeros((self.n_frames, self.n_particles, self.dim_fac))
         # self.results.timeseries not set here
 
     @staticmethod
@@ -184,14 +179,10 @@ class VelocityAutocorr(AnalysisBase):
 
         # trajectory must have velocity information
         if not self._ts.has_velocities:
-            raise NoDataError(
-                "VACF computation requires velocities in the trajectory"
-            )
+            raise NoDataError("VACF computation requires velocities in the trajectory")
 
         # set shape of velocity array
-        self._velocities[self._frame_index] = self.atomgroup.velocities[
-            :, self._dim
-        ]
+        self._velocities[self._frame_index] = self.atomgroup.velocities[:, self._dim]
 
     # Results will be in units of (angstroms / ps)^2
     def _conclude(self):
@@ -222,10 +213,7 @@ class VelocityAutocorr(AnalysisBase):
         # iterate through all possible lagtimes up to N
         for lag in range(N):
             # get product of velocities shifted by "lag" frames
-            veloc = (
-                self._velocities[: N - lag, :, :]
-                * self._velocities[lag:, :, :]
-            )
+            veloc = self._velocities[: N - lag, :, :] * self._velocities[lag:, :, :]
 
             # dot product of x(, y, z) velocities per particle
             sum_veloc = np.sum(veloc, axis=-1)
