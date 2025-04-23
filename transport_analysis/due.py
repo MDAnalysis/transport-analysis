@@ -65,9 +65,7 @@ try:
     )  # lgtm [py/unused-import]
 
     if "due" in locals() and not hasattr(due, "cite"):
-        raise RuntimeError(
-            "Imported due lacks .cite. DueCredit is now disabled"
-        )
+        raise RuntimeError("Imported due lacks .cite. DueCredit is now disabled")
 except Exception as e:
     if not isinstance(e, ImportError):
         import logging

@@ -177,9 +177,7 @@ class TestViscosityHelfand:
     ],
 )
 class TestAllDims:
-    def test_step_vtraj_all_dims(
-        self, step_vtraj_full, NSTEP, tdim, tdim_factor
-    ):
+    def test_step_vtraj_all_dims(self, step_vtraj_full, NSTEP, tdim, tdim_factor):
         # Helfand viscosity results should agree with the unit velocity traj
         # defined in characteristic_poly_helfand()
         vis_h = VH(step_vtraj_full.atoms, dim_type=tdim)
